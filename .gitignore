@@ -1,0 +1,17 @@
+# Secrets: only the examples are committed.
+.env
+.env.*
+!.env.example
+*.local
+
+# Build output and dependencies
+node_modules/
+target/
+dist/
+
+# Local tooling state; design mocks hold real figures.
+.impeccable/mocks/
+.impeccable/hook.cache.json
+.claude/
+graphify-out/
+.DS_Store

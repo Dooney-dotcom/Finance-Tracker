@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/canon.html"
+        ],
+        "createdAt": "2026-11-02T13:25:47.686Z",
+        "reason": "canon card intentionally depicts the category-standard fintech dashboard (Inter) as the standing exit"
+      },
+      {
+        "rule": "ai-color-palette",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/canon.html"
+        ],
+        "createdAt": "2026-11-02T13:25:47.705Z",
+        "reason": "canon card intentionally depicts the category-standard palette as the standing exit"
+      }
+    ]
+  }
+}
