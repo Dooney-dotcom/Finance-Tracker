@@ -1,7 +1,7 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig, loadEnv, type Plugin } from 'vite'
 
-// GitHub Pages can't send headers, so production builds carry the CSP as a <meta>.
+// The CSP depends on build-time env (connect-src), so production builds carry it as a <meta>.
 // Dev skips it: Vite injects inline styles/scripts for HMR.
 function csp(env: Record<string, string>): Plugin {
   const policy = [
@@ -27,8 +27,6 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd())
   return {
     plugins: [react(), csp(env)],
-    // Served from /<repo>/ on GitHub Pages; set VITE_BASE there.
-    base: env.VITE_BASE ?? '/',
     // Reachable from other devices on the home network (e.g. a phone), not only this Mac.
     server: { host: true },
   }

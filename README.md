@@ -10,6 +10,9 @@ It started as a replacement for a Notion finance tracker and an Excel balance sh
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.1-6db33f?logo=springboot&logoColor=white)
 ![Java](https://img.shields.io/badge/Java-17-ed8b00?logo=openjdk&logoColor=white)
 ![Supabase](https://img.shields.io/badge/Supabase-Postgres_+_Auth-3ecf8e?logo=supabase&logoColor=white)
+![Google Cloud](https://img.shields.io/badge/Google_Cloud-Cloud_Run_+_Firebase_Hosting-4285f4?logo=googlecloud&logoColor=white)
+
+**Live:** <https://finance-tracker-dooney.web.app> (invite-only)
 
 ---
 
@@ -108,10 +111,10 @@ A monthly picture of where the money sits, separate from the records.
 ```mermaid
 flowchart LR
     subgraph Browser
-        SPA["React SPA<br/>(GitHub Pages)"]
+        SPA["React SPA<br/>(Firebase Hosting)"]
     end
-    subgraph Google Cloud Run
-        API["Spring Boot API<br/>stateless"]
+    subgraph GCR["Google Cloud Run · europe-west1"]
+        API["Spring Boot API<br/>stateless, scales to zero"]
     end
     subgraph Supabase
         AUTH["Auth<br/>(email, Google, TOTP)"]
@@ -143,6 +146,8 @@ flowchart LR
 | **Database** | Supabase Postgres, with SQL migrations in `supabase/migrations` |
 | **Auth** | Supabase Auth: email and password, Google OAuth, TOTP 2FA |
 | **Container** | Multi-stage Dockerfile running as a non-root user |
+| **Hosting** | Firebase Hosting (SPA), Google Cloud Run (API), both in Google Cloud project `finance-tracker-dooney` |
+| **CI/CD** | GitHub Actions on push to `main`, signed in to Google Cloud with Workload Identity Federation |
 
 ---
 
@@ -158,9 +163,11 @@ flowchart LR
 | **CORS** | Only an explicit allowlist of origins. |
 | **CSRF** | Not applicable: there are bearer tokens only, no cookies, and the API is stateless. |
 | **SQL injection** | Every query uses parameters. |
-| **Browser** | Production builds ship a strict Content-Security-Policy `<meta>` and `no-referrer`. |
+| **Browser** | Production builds ship a strict Content-Security-Policy `<meta>` and `no-referrer`; Firebase Hosting adds `frame-ancestors 'none'` as a header. |
 | **Errors** | RFC 9457 problem details that expose only the app's own messages. The health endpoint shows no details. |
-| **Secrets** | Kept only in gitignored `.env` files or server environment variables. The browser gets only public values. |
+| **Secrets** | Locally in gitignored `.env` files; in production the DB password lives in Secret Manager, readable only by the API's own service account. The browser gets only public values. |
+| **Deploy access** | No service-account keys exist. GitHub Actions gets short-lived credentials through Workload Identity Federation, and only from `main` of this repo (matched by its numeric ID, so a re-created repo with the same name gets nothing). The deployer can push images, deploy the service and publish Hosting, nothing else. |
+| **Dependencies** | Dependabot alerts and security fixes are on, with grouped monthly update PRs for npm, Maven and Actions. The API image is rebuilt monthly so base-image patches ship even without code changes. |
 
 ---
 
@@ -168,6 +175,7 @@ flowchart LR
 
 ```
 Finance-Tracker/
+├── .github/                      workflows/deploy-api.yml · workflows/deploy-web.yml · dependabot.yml
 ├── api/                          Spring Boot REST API
 │   ├── src/main/java/app/financetracker/api/
 │   │   ├── SecurityConfig.java   JWT resource server + CORS
@@ -189,9 +197,10 @@ Finance-Tracker/
 │   │   ├── Calendar.tsx · PlanPanel.tsx
 │   │   ├── Wealth.tsx · wealthMath.ts (+ .check.ts)
 │   │   └── index.css             design tokens & styles
-│   ├── vite.config.ts            CSP injection, base path
+│   ├── vite.config.ts            CSP injection
 │   └── .env.example
 ├── supabase/migrations/          schema, RLS, 2FA, plans, wealth
+├── firebase.json                 Firebase Hosting: serves web/dist, security headers
 └── PRODUCT.md                    product decisions and data model
 ```
 
@@ -278,21 +287,103 @@ cd web && node src/wealthMath.check.ts     # wealth maths self-check
 cd web && npm run lint                     # oxlint
 ```
 
+CI runs `./mvnw test` before every API deploy and `npm run build` before every web deploy. If either one fails, nothing is deployed.
+
 ---
 
 ## Deployment
 
-The project is built to deploy without code changes:
+| | |
+|---|---|
+| **App** | <https://finance-tracker-dooney.web.app> (Firebase Hosting) |
+| **API** | <https://finance-api-822617122001.europe-west1.run.app> (Cloud Run service `finance-api`) |
+| **Google Cloud project** | `finance-tracker-dooney`, region `europe-west1` (closest to Supabase's `eu-west-1`) |
 
-- **Web → GitHub Pages:**
-  - Build with `VITE_BASE=/<repo>/` and the production `VITE_API_URL`.
-  - The build injects the Content-Security-Policy as a `<meta>` tag, because Pages can't send headers.
-- **API → Google Cloud Run:**
-  - Build the container from `api/Dockerfile`.
-  - Set the variables above as environment variables or in Secret Manager. Cloud Run provides `PORT`.
-- **Supabase:**
-  - Add the Pages origin to the Auth redirect URLs.
-  - Add the same origin to the API's `CORS_ORIGINS`.
+Pushing to `main` deploys whatever changed:
+
+| Workflow | Runs when | Does |
+|---|---|---|
+| `.github/workflows/deploy-api.yml` | `api/**` changes, and on the 1st of each month | `mvnw test` → build `api/Dockerfile` → push to Artifact Registry `finance` → deploy to Cloud Run |
+| `.github/workflows/deploy-web.yml` | `web/**` or `firebase.json` changes | `npm run build` → Firebase Hosting |
+
+To redeploy without a code change: `gh workflow run deploy-api.yml` or `gh workflow run deploy-web.yml`.
+
+### Where the config lives
+- **API:** the env vars and the `db-password` secret are set **on the Cloud Run service**, not in the repo. CI only swaps the image, so they stay put. To change one:
+  ```bash
+  gcloud run services update finance-api --region europe-west1 --update-env-vars CORS_ORIGINS=https://…
+  ```
+- **Web:** stored as GitHub repo variables, which you can list with `gh variable list`:
+  - `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` and `VITE_API_URL` are baked into the build.
+  - `GCP_PROJECT`, `GCP_WIF_PROVIDER` and `GCP_DEPLOYER` are used for sign-in to Google Cloud.
+  - All of them are public values, so they don't need to be GitHub secrets.
+
+### Operations
+| Task | How |
+|---|---|
+| API logs | `gcloud run services logs read finance-api --region europe-west1 --limit 50` |
+| Health | `curl https://finance-api-822617122001.europe-west1.run.app/actuator/health` |
+| Roll back the API | `gcloud run revisions list --service finance-api --region europe-west1`, then `gcloud run services update-traffic finance-api --region europe-west1 --to-revisions <revision>=100`. Undo with `--to-latest`. |
+| Roll back the web | Firebase console → Hosting → Release history → Roll back |
+| Rotate the DB password | `alter role finance_api with password '…'` in Supabase, then `printf %s '…' \| gcloud secrets versions add db-password --data-file=-`, then `gcloud run services update finance-api --region europe-west1 --update-secrets DB_PASSWORD=db-password:latest` to roll out a new revision |
+
+### Costs
+- **Free when idle:** the API scales to zero. The first request after a quiet spell takes about 5–10 s while Spring starts. `--min-instances 1` removes that delay for about €10/month.
+- **Capped scale:** `--max-instances 2` limits how much the API can scale, and so how many DB connections it can open (2 × a Hikari pool of 5).
+- **Budget alert:** €5/month on the billing account, counting real spend (free-trial credits excluded).
+
+### One-time setup (already done; kept for a rebuild)
+```bash
+P=<project-id>; R=europe-west1; REPO=Dooney-dotcom/Finance-Tracker
+gcloud projects create $P && gcloud config set project $P
+gcloud billing projects link $P --billing-account <id>
+# Budget alert: console → Billing → Budgets & alerts (monthly, €5, credits excluded).
+gcloud services enable run.googleapis.com artifactregistry.googleapis.com secretmanager.googleapis.com \
+  iamcredentials.googleapis.com sts.googleapis.com firebasehosting.googleapis.com
+# Add Firebase to the project; this also creates the default Hosting site $P.web.app.
+gcloud services enable firebase.googleapis.com
+curl -X POST -H "Authorization: Bearer $(gcloud auth print-access-token)" -H "x-goog-user-project: ${P}" \
+  "https://firebase.googleapis.com/v1beta1/projects/${P}:addFirebase"
+
+# API runtime: own service account that can read only the DB password.
+grep '^DB_PASSWORD=' api/.env | cut -d= -f2- | tr -d '\n' | gcloud secrets create db-password --data-file=-
+gcloud iam service-accounts create finance-api
+gcloud secrets add-iam-policy-binding db-password --role roles/secretmanager.secretAccessor \
+  --member serviceAccount:finance-api@$P.iam.gserviceaccount.com
+gcloud artifacts repositories create finance --repository-format docker --location $R
+gcloud run deploy finance-api --image us-docker.pkg.dev/cloudrun/container/hello --region $R \
+  --service-account finance-api@$P.iam.gserviceaccount.com --allow-unauthenticated \
+  --max-instances 2 --cpu-boost \
+  --set-env-vars SUPABASE_URL=…,DB_URL=…,DB_USER=…,CORS_ORIGINS=https://$P.web.app,JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=75 \
+  --set-secrets DB_PASSWORD=db-password:latest
+
+# Nothing runs as the default compute service account, so it doesn't need Editor.
+N=$(gcloud projects describe $P --format 'value(projectNumber)')
+gcloud projects remove-iam-policy-binding $P --role roles/editor --member serviceAccount:$N-compute@developer.gserviceaccount.com
+
+# GitHub → GCP (keyless), trusting the repo's numeric ID rather than its name.
+RID=$(gh api repos/$REPO --jq .id)
+gcloud iam workload-identity-pools create github --location global
+gcloud iam workload-identity-pools providers create-oidc github --location global --workload-identity-pool github \
+  --issuer-uri https://token.actions.githubusercontent.com \
+  --attribute-mapping google.subject=assertion.sub,attribute.repository_id=assertion.repository_id \
+  --attribute-condition "assertion.repository_id=='$RID' && assertion.ref=='refs/heads/main'"
+gcloud iam service-accounts create github-deployer
+D=github-deployer@$P.iam.gserviceaccount.com
+gcloud iam service-accounts add-iam-policy-binding $D --role roles/iam.workloadIdentityUser \
+  --member principalSet://iam.googleapis.com/projects/$N/locations/global/workloadIdentityPools/github/attribute.repository_id/$RID
+for role in run.developer artifactregistry.writer firebasehosting.admin; do
+  gcloud projects add-iam-policy-binding $P --role roles/$role --member serviceAccount:$D --condition None
+done
+gcloud iam service-accounts add-iam-policy-binding finance-api@$P.iam.gserviceaccount.com \
+  --role roles/iam.serviceAccountUser --member serviceAccount:$D
+
+# Dependabot security alerts and automatic security-fix PRs.
+gh api -X PUT repos/$REPO/vulnerability-alerts && gh api -X PUT repos/$REPO/automated-security-fixes
+```
+Then set the GitHub variables listed above (`gh variable set NAME --body …`). `GCP_WIF_PROVIDER` is `projects/$N/locations/global/workloadIdentityPools/github/providers/github`, and `VITE_API_URL` is the URL from `gcloud run services describe finance-api --region $R --format 'value(status.url)'`.
+
+**Supabase** (Auth → URL Configuration): set the Site URL to `https://finance-tracker-dooney.web.app` and add `https://finance-tracker-dooney.web.app/**` to the Redirect URLs. Keep the localhost entry for development.
 
 ---
 

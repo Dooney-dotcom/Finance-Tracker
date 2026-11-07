@@ -1,0 +1,15 @@
+# Monthly, one grouped PR per ecosystem. PRs never deploy: only pushes to main do.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /web
+    schedule: { interval: monthly }
+    groups: { npm: { patterns: ['*'] } }
+  - package-ecosystem: maven
+    directory: /api
+    schedule: { interval: monthly }
+    groups: { maven: { patterns: ['*'] } }
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: monthly }
+    groups: { actions: { patterns: ['*'] } }
