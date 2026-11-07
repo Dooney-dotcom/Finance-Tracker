@@ -19,14 +19,14 @@ web
     - `GET|POST /api/plans`, `PUT|DELETE /api/plans/{id}`: planned expenses. `GET /api/plans/occurrences?from=&to=` expands them with a status (paid / skipped / overdue / upcoming) and a suggested matching record. `PUT|DELETE /api/plans/{id}/occurrences/{due}` links a record, skips, or resets; `POST …/pay` creates the record and links it.
   - 2FA is enforced in the database: a restrictive RLS policy calls `private.aal_satisfied()`.
   - Local secrets live in `api/.env` (gitignored); `api/.env.example` lists the variables.
-- **Frontend:** in `web/` (delegated; chosen: React 19 + TypeScript + Vite, `@supabase/supabase-js` for auth, system font stack: SF Pro on Apple devices). It calls the Spring API. Charts are hand-written SVG, with no chart library. Hash routing (`#/dashboard`, `#/records`, `#/calendar`, `#/account`) so it works on GitHub Pages. Production builds carry a CSP `<meta>`, because Pages can't send headers. Public config lives in `web/.env.local` (gitignored); see `web/.env.example`. Why: the backend is Spring, not Next/SSR, so a plain client SPA is enough. There is no SEO need, and React has the most mature charting and calendar options for the dashboard and calendar views.
+- **Frontend:** in `web/` (delegated; chosen: React 19 + TypeScript + Vite, `@supabase/supabase-js` for auth, system font stack: SF Pro on Apple devices). It calls the Spring API. Charts are hand-written SVG, with no chart library. Hash routing (`#/dashboard`, `#/records`, `#/calendar`, `#/account`) so it works on any static host. Production builds carry a CSP `<meta>`, because its `connect-src` depends on build-time env. Public config lives in `web/.env.local` (gitignored); see `web/.env.example`. Why: the backend is Spring, not Next/SSR, so a plain client SPA is enough. There is no SEO need, and React has the most mature charting and calendar options for the dashboard and calendar views.
 - **Auth:** Supabase Auth. The SPA uses `supabase-js` with the publishable key only, for sign-in and session handling. Spring receives the user's access token on every request.
 - **Database:** Supabase Postgres, already existing. RLS is enabled on `public.transactions`; at init it had no policies, so the table was closed to every client role.
-- **Hosting:** local for now (user decision, 2026-11-02): the SPA and Spring both run on the developer machine. Deployment target (decided 2026-11-02, to be set up later): the SPA goes on GitHub Pages and Spring on Google Cloud Run. Until then the code must stay deployable without changes:
+- **Hosting:** everything on Google Cloud (user decision, 2026-11-07, replacing the earlier GitHub Pages plan): the SPA on Firebase Hosting and Spring on Cloud Run (europe-west1, next to Supabase eu-west-1), both deployed by GitHub Actions on push to `main`. The code stays deployable without changes:
   - Spring is stateless, and all configuration comes from environment variables: database URL, Supabase JWKS URL, and allowed CORS origins.
   - It exposes a health endpoint and is containerised.
   - It connects through Supabase's connection pooler, never the IPv6-only direct host, so it works the same locally and on Cloud Run.
-  - CORS is limited to the configured origins (localhost now, the Pages origin later).
+  - CORS is limited to the configured origins (the Firebase Hosting origin in production, localhost in dev).
 
 ## Users
 
