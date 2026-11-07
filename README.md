@@ -166,7 +166,7 @@ flowchart LR
 | **Browser** | Production builds ship a strict Content-Security-Policy `<meta>` and `no-referrer`; Firebase Hosting adds `frame-ancestors 'none'` as a header. |
 | **Errors** | RFC 9457 problem details that expose only the app's own messages. The health endpoint shows no details. |
 | **Secrets** | Locally in gitignored `.env` files; in production the DB password lives in Secret Manager, readable only by the API's own service account. The browser gets only public values. |
-| **Deploy access** | No service-account keys exist. GitHub Actions gets short-lived credentials through Workload Identity Federation, and only from `main` of this repo (matched by its numeric ID, so a re-created repo with the same name gets nothing). The deployer can push images, deploy the service and publish Hosting, nothing else. |
+| **Deploy access** | No service-account keys exist. GitHub Actions gets short-lived credentials through Workload Identity Federation, and only from `main` of this repo (matched by its numeric ID, so a re-created repo with the same name gets nothing). The deployer can push images, deploy the service, publish Hosting and check which APIs are enabled, nothing else. |
 | **Dependencies** | Dependabot alerts and security fixes are on, with grouped monthly update PRs for npm, Maven and Actions. The API image is rebuilt monthly so base-image patches ship even without code changes. |
 
 ---
@@ -372,7 +372,7 @@ gcloud iam service-accounts create github-deployer
 D=github-deployer@$P.iam.gserviceaccount.com
 gcloud iam service-accounts add-iam-policy-binding $D --role roles/iam.workloadIdentityUser \
   --member principalSet://iam.googleapis.com/projects/$N/locations/global/workloadIdentityPools/github/attribute.repository_id/$RID
-for role in run.developer artifactregistry.writer firebasehosting.admin; do
+for role in run.developer artifactregistry.writer firebasehosting.admin serviceusage.serviceUsageConsumer; do
   gcloud projects add-iam-policy-binding $P --role roles/$role --member serviceAccount:$D --condition None
 done
 gcloud iam service-accounts add-iam-policy-binding finance-api@$P.iam.gserviceaccount.com \
