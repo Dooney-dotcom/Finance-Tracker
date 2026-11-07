@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-06T00:00:00Z",
+  "title": "Design System: Finance Tracker",
+  "extensions": {
+    "colorMeta": {
+      "ground": { "role": "neutral", "displayName": "Grouped Ground", "canonical": "#f2f2f7", "tonalRamp": ["#1c1c1e", "#2c2c2e", "#48484a", "#636366", "#8e8e93", "#c7c7cc", "#e5e5ea", "#f2f2f7"] },
+      "paper": { "role": "neutral", "displayName": "Card White", "canonical": "#ffffff" },
+      "fill": { "role": "neutral", "displayName": "Grey Fill", "canonical": "rgb(118 118 128 / 0.12)" },
+      "fill-2": { "role": "neutral", "displayName": "Row Hover Fill", "canonical": "rgb(118 118 128 / 0.07)" },
+      "ink": { "role": "neutral", "displayName": "Label", "canonical": "#1d1d1f" },
+      "ink-2": { "role": "neutral", "displayName": "Secondary Label", "canonical": "#6e6e73" },
+      "ink-3": { "role": "neutral", "displayName": "Tertiary Grey (graphic only)", "canonical": "#aeaeb2" },
+      "rule": { "role": "neutral", "displayName": "Separator", "canonical": "#e5e5ea" },
+      "income": { "role": "primary", "displayName": "System Blue (income)", "canonical": "#007aff", "tonalRamp": ["#001a33", "#003e80", "#0058b3", "#0066cc", "#007aff", "#409cff", "#99c9ff", "#e0efff"] },
+      "income-text": { "role": "primary", "displayName": "Deep Link Blue", "canonical": "#0066cc" },
+      "income-deep": { "role": "primary", "displayName": "Navy Ink", "canonical": "#003e80" },
+      "expense": { "role": "primary", "displayName": "System Red (expense)", "canonical": "#ff3b30", "tonalRamp": ["#3d0805", "#8a0010", "#b8000f", "#d70015", "#ff3b30", "#ff6961", "#ffa39e", "#ffe5e3"] },
+      "expense-text": { "role": "primary", "displayName": "Signal Red", "canonical": "#d70015" },
+      "expense-soft": { "role": "primary", "displayName": "Blush", "canonical": "#ffa39e" },
+      "ochre": { "role": "secondary", "displayName": "System Orange (attention)", "canonical": "#ff9500", "tonalRamp": ["#3a2b12", "#6b3d00", "#a35a00", "#c93400", "#ff9500", "#ffb340", "#ffd699", "#fff2dd"] },
+      "ochre-wash": { "role": "secondary", "displayName": "Orange Wash", "canonical": "#fff2dd" },
+      "expected": { "role": "tertiary", "displayName": "System Green (expected)", "canonical": "#248a3d", "tonalRamp": ["#0b2a13", "#14501f", "#1d6f31", "#248a3d", "#30d158", "#66de86", "#a8ecb9", "#e3f8e8"] },
+      "focus": { "role": "primary", "displayName": "Focus Blue", "canonical": "rgb(0 122 255 / 0.45)" },
+      "pill": { "role": "neutral", "displayName": "Droplet Pill", "canonical": "#ffffff" },
+      "glass": { "role": "neutral", "displayName": "Regular Glass Tint", "canonical": "rgb(255 255 255 / 0.5)" },
+      "glass-strong": { "role": "neutral", "displayName": "Strong Glass Tint", "canonical": "rgb(250 250 252 / 0.82)" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "The period's net figure only; 3.25rem on phones; proportional numerals by exception." },
+      "headline": { "displayName": "Headline", "purpose": "A chart's headline figure; the auth title." },
+      "period": { "displayName": "Period", "purpose": "The period label in the toolbar; hero totals." },
+      "title": { "displayName": "Title", "purpose": "Card titles and the brand." },
+      "body": { "displayName": "Body", "purpose": "Prose and table cells; summaries cap at 65ch." },
+      "control": { "displayName": "Control", "purpose": "Segmented and subtab labels." },
+      "label": { "displayName": "Label", "purpose": "Field labels, legends, hero sub-labels, in ink-2." },
+      "caption": { "displayName": "Caption", "purpose": "Table heads, chips, readouts, weekday heads." }
+    },
+    "shadows": [
+      { "name": "glass-edge", "value": "inset 1px 1px 0 rgb(255 255 255 / 0.9), inset -1px -1px 0 rgb(255 255 255 / 0.5), inset 0 0 0 0.5px rgb(0 0 0 / 0.06), inset 0 0 14px rgb(255 255 255 / 0.45)", "purpose": "Specular rim on every glass surface (dark: 0.32 / 0.1 / 0.07 white / 0.04 glow)." },
+      { "name": "glass-shadow", "value": "0 8px 28px rgb(0 0 0 / 0.09), 0 1px 3px rgb(0 0 0 / 0.06)", "purpose": "Float under every glass surface (dark: 0.55 / 0.4)." },
+      { "name": "pill-shadow", "value": "0 3px 8px rgb(0 0 0 / 0.12), 0 0 0 0.5px rgb(0 0 0 / 0.04)", "purpose": "The selected segment droplet only (dark: 0 3px 8px rgb(0 0 0 / 0.3))." },
+      { "name": "focus-ring", "value": "0 0 0 3px var(--focus)", "purpose": "Field focus; other elements use a 3px --focus outline." }
+    ],
+    "materials": [
+      { "name": "glass", "value": "background: var(--glass); backdrop-filter: blur(10px) saturate(190%); box-shadow: var(--glass-edge), var(--glass-shadow)", "purpose": "Nav capsule, account button, period and filter toolbars, chart readouts, sticky import bar." },
+      { "name": "glass-strong", "value": "background: var(--glass-strong); backdrop-filter: blur(32px) saturate(190%); box-shadow: var(--glass-edge), var(--glass-shadow)", "purpose": "Record sheet, popovers, customizable select list." },
+      { "name": "reduced-transparency", "value": "--glass: var(--paper); --glass-strong: var(--paper); --glass-blur: none; --glass-blur-strong: none", "purpose": "prefers-reduced-transparency: glass turns solid." }
+    ],
+    "motion": [
+      { "name": "ease-liquid", "value": "cubic-bezier(0.34, 1.4, 0.64, 1)", "purpose": "Overshoot: the selection droplet (460ms), presses (220ms, scale 0.94-0.96), popover entry (260ms), checkbox tick." },
+      { "name": "ease-out", "value": "cubic-bezier(0.2, 0.8, 0.2, 1)", "purpose": "Bars and planes growing (420ms), sheet entry (320ms), chevron rotation (200ms)." },
+      { "name": "reduced-motion", "value": "animation: none; transition: none", "purpose": "prefers-reduced-motion removes all motion." }
+    ],
+    "breakpoints": [
+      { "name": "phone", "value": "720px" },
+      { "name": "tablet", "value": "1100px" },
+      { "name": "page-max", "value": "1320px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Default quiet capsule; presses in on the liquid ease.",
+      "html": "<button class=\"ds-btn\">Today</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 8px 18px; border: 0; border-radius: 999px; background: var(--fill, rgb(118 118 128 / 0.12)); color: var(--ink, #1d1d1f); font: inherit; font-weight: 600; cursor: pointer; transition: background-color 150ms, scale 220ms cubic-bezier(0.34, 1.4, 0.64, 1); } .ds-btn:hover { background: color-mix(in srgb, var(--ink, #1d1d1f) 14%, transparent); } .ds-btn:active { scale: 0.96; } .ds-btn:focus-visible { outline: 3px solid var(--focus, rgb(0 122 255 / 0.45)); outline-offset: 1px; }"
+    },
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Ink capsule for the main action of a sheet or form.",
+      "html": "<button class=\"ds-btn-primary\">Save record</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 8px 18px; border: 0; border-radius: 999px; background: var(--ink, #1d1d1f); color: var(--paper, #ffffff); font: inherit; font-weight: 600; cursor: pointer; transition: background-color 150ms, scale 220ms cubic-bezier(0.34, 1.4, 0.64, 1); } .ds-btn-primary:hover { background: color-mix(in srgb, var(--ink, #1d1d1f) 84%, var(--paper, #ffffff)); } .ds-btn-primary:active { scale: 0.96; } .ds-btn-primary:focus-visible { outline: 3px solid var(--focus, rgb(0 122 255 / 0.45)); outline-offset: 1px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Transparent capsule for secondary actions.",
+      "html": "<button class=\"ds-btn-ghost\">Cancel</button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; min-height: 40px; padding: 8px 18px; border: 0; border-radius: 999px; background: transparent; color: var(--ink, #1d1d1f); font: inherit; font-weight: 600; cursor: pointer; transition: background-color 150ms, scale 220ms cubic-bezier(0.34, 1.4, 0.64, 1); } .ds-btn-ghost:hover { background: var(--fill, rgb(118 118 128 / 0.12)); } .ds-btn-ghost:active { scale: 0.96; } .ds-btn-ghost:focus-visible { outline: 3px solid var(--focus, rgb(0 122 255 / 0.45)); outline-offset: 1px; }"
+    },
+    {
+      "name": "Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Filled grey field at 12px with a label above.",
+      "html": "<label class=\"ds-field\"><span>Description</span><input placeholder=\"Groceries\"></label>",
+      "css": ".ds-field { display: grid; gap: 6px; } .ds-field span { font-size: 0.875rem; font-weight: 600; color: var(--ink-2, #6e6e73); } .ds-field input { min-height: 44px; padding: 10px 14px; font: inherit; color: var(--ink, #1d1d1f); background: var(--fill, rgb(118 118 128 / 0.12)); border: 0; border-radius: 12px; transition: box-shadow 150ms; } .ds-field input::placeholder { color: var(--ink-2, #6e6e73); } .ds-field input:focus-visible { outline: 0; box-shadow: 0 0 0 3px var(--focus, rgb(0 122 255 / 0.45)); }"
+    },
+    {
+      "name": "Content Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Solid paper card, no shadow; all content lives here.",
+      "html": "<section class=\"ds-card\"><h2>Where it went</h2><p class=\"ds-card-muted\">€1,257.00 across 12 categories</p></section>",
+      "css": ".ds-card { background: var(--paper, #ffffff); border-radius: 24px; padding: 20px 24px 24px; color: var(--ink, #1d1d1f); } .ds-card h2 { font-size: 1.125rem; font-weight: 700; letter-spacing: -0.015em; margin: 0 0 14px; } .ds-card-muted { color: var(--ink-2, #6e6e73); margin: 0; font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "custom",
+      "refersTo": "segmented",
+      "description": "Grey capsule track with a white droplet on the selected segment.",
+      "html": "<div class=\"ds-seg\"><button>Day</button><button>Week</button><button aria-pressed=\"true\">Month</button><button>Year</button></div>",
+      "css": ".ds-seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--fill, rgb(118 118 128 / 0.12)); } .ds-seg button { min-height: 34px; padding: 0 16px; border: 0; border-radius: 999px; background: transparent; font: inherit; font-size: 0.9375rem; font-weight: 600; color: var(--ink, #1d1d1f); cursor: pointer; transition: scale 220ms cubic-bezier(0.34, 1.4, 0.64, 1); } .ds-seg button:active { scale: 0.94; } .ds-seg button[aria-pressed='true'] { background: var(--pill, #ffffff); box-shadow: 0 3px 8px rgb(0 0 0 / 0.12), 0 0 0 0.5px rgb(0 0 0 / 0.04); } .ds-seg button:focus-visible { outline: 3px solid var(--focus, rgb(0 122 255 / 0.45)); outline-offset: 1px; }"
+    },
+    {
+      "name": "Glass Tab Capsule",
+      "kind": "nav",
+      "refersTo": "nav-tab",
+      "description": "Floating regular-glass nav capsule; current tab sits on a fill droplet.",
+      "html": "<nav class=\"ds-tabs\"><a href=\"#\" aria-current=\"page\">Dashboard</a><a href=\"#\">Records</a><a href=\"#\">Calendar</a><a href=\"#\">Wealth</a></nav>",
+      "css": ".ds-tabs { display: inline-flex; gap: 2px; padding: 4px; border-radius: 999px; background: var(--glass, rgb(255 255 255 / 0.5)); -webkit-backdrop-filter: blur(10px) saturate(190%); backdrop-filter: blur(10px) saturate(190%); box-shadow: inset 1px 1px 0 rgb(255 255 255 / 0.9), inset -1px -1px 0 rgb(255 255 255 / 0.5), inset 0 0 0 0.5px rgb(0 0 0 / 0.06), inset 0 0 14px rgb(255 255 255 / 0.45), 0 8px 28px rgb(0 0 0 / 0.09), 0 1px 3px rgb(0 0 0 / 0.06); } .ds-tabs a { display: flex; align-items: center; height: 40px; padding: 0 18px; border-radius: 999px; color: var(--ink-2, #6e6e73); font-weight: 600; text-decoration: none; transition: color 200ms, scale 220ms cubic-bezier(0.34, 1.4, 0.64, 1); } .ds-tabs a:hover { color: var(--ink, #1d1d1f); } .ds-tabs a:active { scale: 0.94; } .ds-tabs a[aria-current='page'] { color: var(--ink, #1d1d1f); background: var(--fill, rgb(118 118 128 / 0.12)); } .ds-tabs a:focus-visible { outline: 3px solid var(--focus, rgb(0 122 255 / 0.45)); outline-offset: 1px; }"
+    },
+    {
+      "name": "Period Toolbar",
+      "kind": "custom",
+      "description": "Sticky regular-glass toolbar holding the stepper and period label.",
+      "html": "<div class=\"ds-bar\"><button class=\"ds-step\" aria-label=\"Previous\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 20 20\"><path d=\"M12 4 6 10l6 6\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg></button><strong>November 2026</strong><button class=\"ds-step\" aria-label=\"Next\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 20 20\"><path d=\"m8 4 6 6-6 6\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg></button></div>",
+      "css": ".ds-bar { display: inline-flex; align-items: center; gap: 4px; padding: 8px 10px; border-radius: 28px; color: var(--ink, #1d1d1f); background: var(--glass, rgb(255 255 255 / 0.5)); -webkit-backdrop-filter: blur(10px) saturate(190%); backdrop-filter: blur(10px) saturate(190%); box-shadow: inset 1px 1px 0 rgb(255 255 255 / 0.9), inset -1px -1px 0 rgb(255 255 255 / 0.5), inset 0 0 0 0.5px rgb(0 0 0 / 0.06), inset 0 0 14px rgb(255 255 255 / 0.45), 0 8px 28px rgb(0 0 0 / 0.09), 0 1px 3px rgb(0 0 0 / 0.06); } .ds-bar strong { font-size: 1.375rem; font-weight: 700; letter-spacing: -0.022em; min-width: 12ch; text-align: center; } .ds-step { width: 36px; height: 36px; display: grid; place-items: center; padding: 0; color: inherit; background: none; border: 0; border-radius: 999px; cursor: pointer; transition: background-color 150ms, scale 220ms cubic-bezier(0.34, 1.4, 0.64, 1); } .ds-step:hover { background: var(--fill, rgb(118 118 128 / 0.12)); } .ds-step:active { scale: 0.9; } .ds-step:focus-visible { outline: 3px solid var(--focus, rgb(0 122 255 / 0.45)); outline-offset: 1px; }"
+    },
+    {
+      "name": "Chip",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Fill capsule for a change figure next to a headline.",
+      "html": "<span class=\"ds-chip ds-chip-up\">+12% vs last month</span>",
+      "css": ".ds-chip { display: inline-block; padding: 2px 10px; border-radius: 999px; background: var(--fill, rgb(118 118 128 / 0.12)); font-size: 0.8125rem; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--ink, #1d1d1f); } .ds-chip-up { color: var(--expense-text, #d70015); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Still Water, Floating Glass",
+    "overview": "Money sits still; the hands move. Every figure, chart and table rests on a solid, shadowless card over the iOS grouped background, and every control that acts on that content (the tab capsule, the period and filter toolbars, the record sheet, popovers, chart readouts, the sticky import bar) floats above it in Liquid Glass: a translucent tint, backdrop blur with boosted saturation, a light rim with an inner specular edge, and a soft drop shadow. The split is the system. Glass never touches content, and content never floats.\n\nThe world follows the operating system: SF Pro through the system font stack, Apple system colours, light and dark by `prefers-color-scheme`, solid glass under Reduce Transparency, no motion under Reduce Motion. Density is a working tool's, not a brochure's: tabular numerals everywhere money is counted, 0.5px hairline rules between rows, capsule controls at 40px and fields at 44px. The one flourish is the selection droplet, a pill that slides between tabs and segments on an overshooting ease and settles.\n\nThe previous \"Olivetti\" paper-and-black-bar shell is gone and is not a reference. So is the \"glass on every card\" costume.",
+    "keyCharacteristics": [
+      "Two layers only: solid content cards (no shadow) and a floating glass control layer.",
+      "Apple system colours carry money: blue income, red expense, orange attention, green expected.",
+      "Capsules for every control; 24px cards; 12px filled fields.",
+      "Selection is a sliding droplet with a springy overshoot.",
+      "Follows system light/dark and the OS accessibility preferences."
+    ],
+    "rules": [
+      { "name": "The Money Has Four Colours Rule", "body": "Blue is income, red is expense, orange is \"look here\", green is expected. No other hue enters the chrome; a new state reuses one of these meanings or stays neutral.", "section": "colors" },
+      { "name": "The User's Colours Are Data Rule", "body": "Category colours are chosen by the user and are rendered as given, on keys, dots, bars and donut slices. Never restyle, tint or theme them.", "section": "colors" },
+      { "name": "The Text-Tone Rule", "body": "A system colour used as small text takes its `-text` variant; the bright hue is for fills, strokes and the big figure only. `ink-3` is never text.", "section": "colors" },
+      { "name": "The Tabular Money Rule", "body": "Every amount in a table, list, legend, readout, chip or calendar cell uses tabular numerals so columns align. Only the hero net figure is proportional.", "section": "typography" },
+      { "name": "The Negative Tracking Rule", "body": "Headings tighten as they grow: -0.015em at title size down to -0.04em at display. Never positive tracking, never uppercase labels.", "section": "typography" },
+      { "name": "The Glass Is For Hands Rule", "body": "Glass belongs to things you operate, never to things you read. A card, table, chart or banner is solid `paper`, always.", "section": "elevation" },
+      { "name": "The Reduce Transparency Rule", "body": "Under `prefers-reduced-transparency: reduce` both glass tints become `paper` and blur is removed. Any new glass surface must read its tint and blur from the tokens so it inherits this.", "section": "elevation" },
+      { "name": "The Scroll-Edge Rule", "body": "The top bar has no fill of its own; content fades and softens under it through a `ground` gradient with a 6px blur and a masked bottom edge.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do put new controls that float (toolbars, popovers, overlays) in glass using `--glass`/`--glass-strong`, `--glass-blur`/`--glass-blur-strong`, `--glass-edge` and `--glass-shadow`, never literal values.",
+      "Do put new content on a solid `paper` card at `--r-card` with no shadow.",
+      "Do make every control a capsule (999px) and every field a 12px filled `fill` box.",
+      "Do use the selection droplet for any new single-choice control.",
+      "Do use the liquid ease for presses, droplets and popover entry; use `--ease-out` for bars and disclosure chevrons.",
+      "Do read chart colours from the tokens so charts follow light/dark.",
+      "Do set money in tabular numerals."
+    ],
+    "donts": [
+      "Don't put glass on cards, tables, charts, banners or any content surface.",
+      "Don't add a shadow to a content card.",
+      "Don't introduce a hue outside the four money colours and the greys.",
+      "Don't restyle or theme user-chosen category colours.",
+      "Don't use `ink-3` or a bright system hue as small text; use `ink-2` or the `-text` variant.",
+      "Don't hard-code a colour that has a token; dark mode only works through the tokens."
+    ]
+  }
+}

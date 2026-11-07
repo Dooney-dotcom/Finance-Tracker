@@ -8,9 +8,12 @@ const pad = (n: number) => String(n).padStart(2, '0')
 const iso = (y: number, m: number, d: number) => `${y}-${pad(m + 1)}-${pad(d)}`
 const WEEKDAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
 
-export function Icon({ name }: { name: 'calendar' | 'left' | 'right' | 'check' }) {
-  const d = { calendar: 'M3 6h14M6 2.5v3M14 2.5v3M3.75 4h12.5v12.5H3.75z', left: 'M12 4 6 10l6 6', right: 'm8 4 6 6-6 6', check: 'm4.5 10.5 3.5 3.5 7.5-8' }[name]
-  return <svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true"><path d={d} fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round" /></svg>
+export function Icon({ name }: { name: 'calendar' | 'left' | 'right' | 'check' | 'dashboard' | 'records' | 'wealth' }) {
+  const d = {
+    calendar: 'M3 6h14M6 2.5v3M14 2.5v3M3.75 4h12.5v12.5H3.75z', left: 'M12 4 6 10l6 6', right: 'm8 4 6 6-6 6', check: 'm4.5 10.5 3.5 3.5 7.5-8',
+    dashboard: 'M4 16.5v-6M10 16.5v-13M16 16.5v-9', records: 'M7.5 5H17M7.5 10H17M7.5 15H17M3.5 5h.01M3.5 10h.01M3.5 15h.01', wealth: 'm3 14.5 4.5-4.5 3 3L17 6.5M12.5 6.5H17V11',
+  }[name]
+  return <svg width="18" height="18" viewBox="0 0 20 20" aria-hidden="true"><path d={d} fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinejoin="round" strokeLinecap="round" /></svg>
 }
 
 /** Places a popover under its trigger, kept inside the viewport. */

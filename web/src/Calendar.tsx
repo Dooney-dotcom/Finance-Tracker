@@ -8,7 +8,7 @@ const pad = (n: number) => String(n).padStart(2, '0')
 const iso = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 // Sequential, one hue: spend tints the day red, capped so ink text stays readable on the darkest step.
-const STEPS = ['transparent', '#fbe3dc', '#f6c2b5', '#f0a08c', '#ea7e64']
+const STEPS = ['transparent', 'var(--heat-1)', 'var(--heat-2)', 'var(--heat-3)', 'var(--heat-4)']
 
 export function Calendar() {
   const [month, setMonth] = useState(today().slice(0, 8) + '01')
@@ -160,7 +160,7 @@ export function Calendar() {
                       {e && e.earned > 0 && <span className="earned">+{money(e.earned)}</span>}
                       {due && <span className={'planned' + (due.some((o) => o.status === 'overdue') ? ' overdue' : '')} title={due.map((o) => o.description).join(', ')}>{money(dueSum)}</span>}
                       {e && <span className="dots" aria-hidden="true">{e.recs.slice(0, 5).map((x) => (
-                        <i key={x.id} style={{ background: x.categoryId ? catById.get(x.categoryId)?.color ?? '#b9b6ad' : 'var(--ochre)' }} />
+                        <i key={x.id} style={{ background: x.categoryId ? catById.get(x.categoryId)?.color ?? 'var(--ink-3)' : 'var(--ochre)' }} />
                       ))}</span>}
                     </button>
                   )

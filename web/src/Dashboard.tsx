@@ -4,7 +4,7 @@ import { Donut, Legend, Sankey, TableView, TimeChart, type Row, type Seg, type S
 
 const INCOME = 'var(--income)', EXPENSE = 'var(--expense)', PACE = 'var(--ink-2)'
 // Categories carry the colour their owner picked; ochre stays reserved for "needs attention".
-const OTHER = '#b9b6ad', UNCATEGORISED = 'var(--ochre)'
+const OTHER = 'var(--ink-3)', UNCATEGORISED = 'var(--ochre)'
 const PERIODS: [Period, string][] = [['DAY', 'Day'], ['WEEK', 'Week'], ['MONTH', 'Month'], ['YEAR', 'Year']]
 
 const recordsLink = (params: Record<string, string>) => '#/records?' + new URLSearchParams(params).toString()

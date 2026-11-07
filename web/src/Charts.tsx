@@ -100,12 +100,7 @@ export function TimeChart({ rows, series, mode, height = 260, label, xEvery = 1,
               <text x={PAD.left - 8} y={y(t)} className="tick" textAnchor="end" dominantBaseline="middle">{moneyRound(t)}</text>
             </g>
           ))}
-          {refLine && (
-            <g>
-              <line x1={PAD.left} x2={width - PAD.right} y1={y(refLine.value)} y2={y(refLine.value)} stroke={refLine.color} strokeWidth={1.5} strokeDasharray="6 4" />
-              <text x={width - PAD.right} y={y(refLine.value) - 6} textAnchor="end" className="tick" style={{ fill: refLine.color }}>{refLine.label}</text>
-            </g>
-          )}
+          {refLine && <line x1={PAD.left} x2={width - PAD.right} y1={y(refLine.value)} y2={y(refLine.value)} stroke={refLine.color} strokeWidth={1.5} strokeDasharray="6 4" />}
           {rows.map((r, i) => (i % xEvery === 0 || i === rows.length - 1) && (
             <text key={i} x={x(i)} y={height - 8} className="tick" textAnchor="middle">{r.label}</text>
           ))}
@@ -161,6 +156,8 @@ export function TimeChart({ rows, series, mode, height = 260, label, xEvery = 1,
             const v = rows[hover].values[si]
             return v == null ? null : <circle key={s.name} cx={x(hover)} cy={y(v)} r={4.5} fill={s.color} className="ring" />
           })}
+          {/* after the series, so its paper halo masks any line crossing it */}
+          {refLine && <text x={width - PAD.right} y={y(refLine.value) - 6} textAnchor="end" className="tick" style={{ fill: refLine.color }}>{refLine.label}</text>}
         </svg>
       )}
       {hover !== null && !onHover && (

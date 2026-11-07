@@ -11,6 +11,7 @@ dist/
 
 # Local tooling state; design mocks hold real figures.
 .impeccable/mocks/
+.impeccable/review/
 .impeccable/hook.cache.json
 .claude/
 graphify-out/

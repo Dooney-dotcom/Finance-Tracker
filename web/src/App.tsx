@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib'
 import { MfaChallenge, SetPassword, SignIn } from './Auth'
 import { Account } from './Account'
+import { Icon } from './Controls'
 import { Dashboard } from './Dashboard'
 import { RecordsPage } from './RecordsPage'
 import { Calendar } from './Calendar'
@@ -76,7 +77,7 @@ export default function App() {
         <a className="brand" href="#/dashboard">Finance Tracker</a>
         <nav className="tabs" aria-label="Main">
           {TABS.map(([id, label]) => (
-            <a key={id} href={`#/${id}`} aria-current={route.split('/')[0] === id ? 'page' : undefined}>{label}</a>
+            <a key={id} href={`#/${id}`} aria-current={route.split('/')[0] === id ? 'page' : undefined}><Icon name={id} /><span>{label}</span></a>
           ))}
         </nav>
         <a className="account-link" href="#/account" aria-current={route === 'account' ? 'page' : undefined}>Account</a>

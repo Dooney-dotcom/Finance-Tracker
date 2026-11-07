@@ -136,7 +136,7 @@ flowchart LR
 |---|---|
 | **Frontend** | React 19, TypeScript 7, Vite 8, `@supabase/supabase-js` |
 | **Charts** | Hand-written SVG components (stacked areas, lines, diverging bars, donut, Sankey), with no chart library |
-| **Typography** | Archivo variable, self-hosted via Fontsource |
+| **Typography** | System font (SF Pro on Apple devices), no web font |
 | **Routing** | Hash routing (`#/dashboard`, `#/records`, …), so it works on static hosting |
 | **Linting** | oxlint |
 | **Backend** | Spring Boot 4.1, Java 17, Maven; Spring Security OAuth2 Resource Server; `JdbcClient` (no ORM) |
