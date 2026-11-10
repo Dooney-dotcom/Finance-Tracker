@@ -32,6 +32,9 @@ export interface DashboardData {
   planned: { stillToPay: number; unpaid: Occurrence[]; comingUp: Occurrence[]; monthlyCommitment: number; averageIncome: number | null }
 }
 
+/** Fired when the session is gone (idle timeout or a 401); App signs out and says why. */
+export const SESSION_EXPIRED = 'session-expired'
+
 export class ApiError extends Error {
   status: number
   constructor(status: number, detail?: string) {
@@ -58,6 +61,7 @@ export async function api<T>(path: string, init: { method?: string; json?: unkno
     throw new ApiError(0)
   }
   if (!res.ok) {
+    if (res.status === 401) window.dispatchEvent(new Event(SESSION_EXPIRED))
     let detail: string | undefined
     try { detail = (await res.json()).detail } catch { /* no body */ }
     throw new ApiError(res.status, detail)

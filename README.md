@@ -158,6 +158,7 @@ flowchart LR
 | **Tenant isolation** | Every table has `user_id` and RLS policies `user_id = auth.uid()`. The API also scopes each query by user. |
 | **Least privilege** | The API logs in as `finance_api`, which has **no table rights of its own** (`NOINHERIT`). A query that skips the per-request role switch fails closed. |
 | **2FA** | A *restrictive* RLS policy requires an `aal2` token once a user has a verified authenticator. |
+| **Idle timeout** | A session unused for `SESSION_IDLE_TIMEOUT` (default 30 min) is refused. The database keeps a deadline for each session, and every API request extends it. Once the deadline passes, the session can't be revived, not even with a refreshed token, and a restrictive RLS policy blocks it on every table. The web app pings the API while you're active, signs you out when you go idle, and tells you why. |
 | **Token checks** | ES256 signature against the JWKS, plus issuer, `aud = authenticated` and expiry. |
 | **Invite-only** | Public sign-up is disabled, and Google sign-in can't create accounts. |
 | **CORS** | Only an explicit allowlist of origins. |
@@ -236,6 +237,7 @@ cp .env.example .env      # fill in SUPABASE_URL, DB_URL, DB_USER, DB_PASSWORD, 
 | `DB_URL` | JDBC URL of the Supabase **session pooler** (works over IPv4) |
 | `DB_USER` / `DB_PASSWORD` | The `finance_api` role (`finance_api.<project-ref>` on the pooler) |
 | `CORS_ORIGINS` | Comma-separated allowed origins |
+| `SESSION_IDLE_TIMEOUT` | Optional; idle time before a session is refused, e.g. `30m` (default). Keep `VITE_SESSION_IDLE_MINUTES` in the web app equal |
 | `PORT` | Optional; defaults to `8080` |
 
 ### 3. Web
@@ -261,6 +263,7 @@ All endpoints are under `/api` and need `Authorization: Bearer <supabase access 
 | `PUT` `DELETE` | `/records/{id}` | Update or delete a record |
 | `POST` | `/records/import/revolut/preview` | Parse a CSV and show what would happen (writes nothing) |
 | `POST` | `/records/import/revolut` | Insert the confirmed rows |
+| `POST` | `/session` | Keep-alive while you're active; `401` once the session has gone idle |
 | `GET` | `/lists` | Categories and payment methods |
 | `POST` `PUT` `DELETE` | `/categories/{id}`, `/payment-methods/{id}` | Manage lists (`DELETE ?reassignTo=` moves records first) |
 | `GET` `POST` | `/plans` | Planned-expense rules |
@@ -285,6 +288,7 @@ cd api && ./mvnw test                      # dashboard, plans, Revolut CSV, weal
 cd web && npm run build                    # type-check + production build
 cd web && node src/wealthMath.check.ts     # wealth maths self-check
 cd web && npm run lint                     # oxlint
+psql "$DB" -v ON_ERROR_STOP=1 -f supabase/tests/session_idle_timeout.sql   # idle timeout, against a DB with the migrations applied
 ```
 
 CI runs `./mvnw test` before every API deploy and `npm run build` before every web deploy. If either one fails, nothing is deployed.

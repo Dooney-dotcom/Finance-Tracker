@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
-import { supabase } from './lib'
+import { api, SESSION_EXPIRED, supabase } from './lib'
 import { MfaChallenge, SetPassword, SignIn } from './Auth'
 import { Account } from './Account'
 import { Icon } from './Controls'
@@ -30,6 +30,36 @@ function takeUrlParams() {
   const out = { tokenHash: q.get('token_hash'), type: q.get('type'), error: q.get('error_description') }
   if (out.tokenHash || out.error) history.replaceState(null, '', window.location.pathname + window.location.hash)
   return out
+}
+
+const IDLE_MS = Number(import.meta.env.VITE_SESSION_IDLE_MINUTES || 30) * 60_000
+const LAST_ACTIVE = 'ft:last-active'
+
+/**
+ * Activity pings the API at most once a minute; that's what keeps the session alive,
+ * since the API enforces the same timeout. After IDLE_MS without input, expires the
+ * session. Last activity is shared through localStorage so an idle tab can't sign
+ * out a busy one.
+ */
+function useIdleTimeout(on: boolean) {
+  useEffect(() => {
+    if (!on) return
+    let last = 0
+    const active = () => {
+      if (Date.now() - last < 60_000) return
+      last = Date.now()
+      try { localStorage.setItem(LAST_ACTIVE, String(last)) } catch { /* this tab only */ }
+      api('/api/session', { method: 'POST' }).catch(() => { /* a 401 already fired SESSION_EXPIRED */ })
+    }
+    const shared = () => { try { return Number(localStorage.getItem(LAST_ACTIVE)) || 0 } catch { return 0 } }
+    const check = setInterval(() => {
+      if (Date.now() - Math.max(last, shared()) > IDLE_MS) window.dispatchEvent(new Event(SESSION_EXPIRED))
+    }, 15_000)
+    const events = ['pointerdown', 'pointermove', 'keydown', 'scroll', 'touchstart']
+    events.forEach((e) => window.addEventListener(e, active, { capture: true, passive: true }))
+    active()
+    return () => { clearInterval(check); events.forEach((e) => window.removeEventListener(e, active, { capture: true })) }
+  }, [on])
 }
 
 export default function App() {
@@ -63,8 +93,12 @@ export default function App() {
         else { setSession(data.session); setInvite(type === 'invite'); setGate('set-password') }
       })
     }
-    return () => sub.subscription.unsubscribe()
+    // Local scope: revokes this session's refresh token, leaves other devices signed in.
+    const expire = () => { setUrlError('Your session expired after a period of inactivity. Sign in again.'); supabase.auth.signOut({ scope: 'local' }) }
+    window.addEventListener(SESSION_EXPIRED, expire)
+    return () => { sub.subscription.unsubscribe(); window.removeEventListener(SESSION_EXPIRED, expire) }
   }, [])
+  useIdleTimeout(gate === 'in')
 
   if (gate === 'loading') return <div className="boot" aria-busy="true" />
   if (gate === 'signed-out') return <SignIn initialError={urlError} />
