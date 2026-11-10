@@ -58,4 +58,15 @@ class RevolutCsvTest {
 	void rejectsFilesThatAreNotRevolutStatements() {
 		assertThatThrownBy(() -> RevolutCsv.parse("date,amount\n2026-01-01,5")).hasMessageContaining("Revolut");
 	}
+
+	@Test
+	void flagsAmountsOutsideTheAppsRangeQuickly() {
+		String row = "Type,Started Date,Description,Amount,Fee,Currency,State\nCard Payment,2026-01-05 10:00:00,Shop,%s,0.00,EUR,COMPLETED\n";
+		org.junit.jupiter.api.Assertions.assertTimeoutPreemptively(java.time.Duration.ofSeconds(1), () -> {
+			for (String amount : new String[] { "-1E+200000", "-1" + "0".repeat(100000), "-2000000000.00", "-1.005" }) {
+				assertThat(RevolutCsv.parse(row.formatted(amount)).get(0).status()).as(amount.substring(0, 6)).isEqualTo(Status.FLAGGED);
+			}
+		});
+		assertThat(RevolutCsv.parse(row.formatted("-999999999.99")).get(0).status()).isEqualTo(Status.NEW);
+	}
 }
