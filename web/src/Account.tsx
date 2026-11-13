@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import type { Factor } from '@supabase/supabase-js'
 import { supabase } from './lib'
+import { Loading, Sk } from './Controls'
 import { MIN_PASSWORD } from './Auth'
 
 function TwoFactor() {
@@ -47,7 +48,7 @@ function TwoFactor() {
     load()
   }
 
-  if (factor === undefined) return <p className="muted">Loading…</p>
+  if (factor === undefined) return <Loading label="two-factor status" className="sk-panel"><Sk w={420} /><Sk w={180} h={40} /></Loading>
   return (
     <>
       {factor && !enrolling && (
