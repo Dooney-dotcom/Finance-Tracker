@@ -248,7 +248,7 @@ npm install
 npm run dev                  # http://localhost:5173
 ```
 
-> **Using it from your phone:** the dev server listens on your local network. Set `VITE_API_URL` to your machine's LAN IP, and add `http://<lan-ip>:5173` to `CORS_ORIGINS` and to the Supabase Auth redirect URLs.
+> **Using it from your phone:** the dev server listens on your local network. Set `VITE_API_URL` to your machine's LAN IP and add `http://<lan-ip>:5173` to `CORS_ORIGINS` in `api/.env`. Signing in with a password works as is. **Don't add LAN or other `http://` origins to the Supabase redirect URLs**: development shares the production project, so every entry there is a trusted redirect for real users' sign-in and reset links. To test Google sign-in or email links on a phone, use a separate Supabase project for development, or an HTTPS tunnel to a hostname you own.
 
 ---
 
@@ -387,7 +387,7 @@ gh api -X PUT repos/$REPO/vulnerability-alerts && gh api -X PUT repos/$REPO/auto
 ```
 Then set the GitHub variables listed above (`gh variable set NAME --body …`). `GCP_WIF_PROVIDER` is `projects/$N/locations/global/workloadIdentityPools/github/providers/github`, and `VITE_API_URL` is the URL from `gcloud run services describe finance-api --region $R --format 'value(status.url)'`.
 
-**Supabase** (Auth → URL Configuration): set the Site URL to `https://finance-tracker-dooney.web.app` and add `https://finance-tracker-dooney.web.app/**` to the Redirect URLs. Keep the localhost entry for development.
+**Supabase** (Auth → URL Configuration): set the Site URL to `https://finance-tracker-dooney.web.app` and add `https://finance-tracker-dooney.web.app/**` to the Redirect URLs. Keep the localhost entry for development, and nothing else: no LAN IPs, no other `http://` origins, no wildcards that match them.
 
 ---
 
