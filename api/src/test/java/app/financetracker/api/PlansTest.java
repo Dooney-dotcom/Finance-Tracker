@@ -83,4 +83,10 @@ class PlansTest {
 			plan("Once", "2026-12-01", null, "999.00", null));
 		assertThat(Plans.monthlyCommitment(plans, d("2026-11-04"))).isEqualByComparingTo("540.00");
 	}
+
+	@Test
+	void amountsMustFitTheColumn() {
+		for (String ok : List.of("0", "4.99", "9999999999.99", "1.500")) assertThat(PlansController.validAmount(new BigDecimal(ok))).as(ok).isTrue();
+		for (String bad : List.of("-1", "0.001", "10000000000", "1e400")) assertThat(PlansController.validAmount(new BigDecimal(bad))).as(bad).isFalse();
+	}
 }
