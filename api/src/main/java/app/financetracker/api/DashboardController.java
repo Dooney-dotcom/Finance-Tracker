@@ -57,7 +57,7 @@ class DashboardController {
 
 	/** Unpaid bills in the period, the next 7 days (with up to a month of overdue ones), and what repeating bills cost per month. */
 	private static Dashboard.Planned planned(JdbcClient sql, UUID user, Dashboard.Period period, LocalDate anchor, List<Dashboard.Row> rows) {
-		List<Plans.Plan> plans = PlansController.plans(sql, user, null);
+		List<Plans.Plan> plans = PlansController.plans(sql, user, null, false);
 		if (plans.isEmpty()) return Dashboard.Planned.NONE;
 		LocalDate today = LocalDate.now(ROME);
 		LocalDate start = Dashboard.start(period, anchor), end = Dashboard.end(period, anchor);
