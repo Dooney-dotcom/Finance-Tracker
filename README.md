@@ -234,7 +234,7 @@ cp .env.example .env      # fill in SUPABASE_URL, DB_URL, DB_USER, DB_PASSWORD, 
 | Variable | Purpose |
 |---|---|
 | `SUPABASE_URL` | Project URL, used to verify tokens (`/auth/v1/.well-known/jwks.json`) |
-| `DB_URL` | JDBC URL of the Supabase **session pooler** (works over IPv4) |
+| `DB_URL` | JDBC URL of the Supabase **session pooler** (works over IPv4), ending in `?sslmode=verify-full&sslrootcert=supabase-ca.crt` so the server certificate and host name are checked against Supabase's root CA (`api/supabase-ca.crt`, the "SSL certificate" in the dashboard's database settings) |
 | `DB_USER` / `DB_PASSWORD` | The `finance_api` role (`finance_api.<project-ref>` on the pooler) |
 | `CORS_ORIGINS` | Comma-separated allowed origins |
 | `SESSION_IDLE_TIMEOUT` | Optional; idle time before a session is refused, e.g. `30m` (default). Keep `VITE_SESSION_IDLE_MINUTES` in the web app equal |
