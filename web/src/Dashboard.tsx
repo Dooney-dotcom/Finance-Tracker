@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ApiError, fetchDashboard, fmtDate, money, periodLabel, shift, signed, supabase, today, type DashboardData, type Period, type Slice } from './lib'
 import { Donut, Legend, Sankey, TableView, TimeChart, type Row, type Seg, type Series } from './Charts'
+import { Loading, Sk, SkPanel } from './Controls'
 
 const INCOME = 'var(--income)', EXPENSE = 'var(--expense)', PACE = 'var(--ink-2)'
 // Categories carry the colour their owner picked; ochre stays reserved for "needs attention".
@@ -81,11 +82,23 @@ export function Chevron({ dir }: { dir: 'left' | 'right' }) {
   )
 }
 
+// Mirrors the board for the default view (this month), so the real panels land where the skeleton was.
 function Skeleton() {
   return (
-    <div className="board" aria-busy="true" aria-label="Loading dashboard">
-      {['hero', 'trend', 'where', 'avoid', 'methods'].map((k) => <section key={k} className={'panel sk ' + k}><div className="sk-block" /></section>)}
-    </div>
+    <Loading label="dashboard" className="board sk-dash">
+      <section className="panel sk-panel hero">
+        <Sk w="55%" h="4.5rem" />
+        <Sk w="70%" /><Sk w="45%" />
+        <Sk shape="block" h={104} />
+        <div className="sk-row"><Sk w="25%" h="2.5rem" /><Sk w="25%" h="2.5rem" /><Sk w="15%" h="2.5rem" /></div>
+      </section>
+      <SkPanel className="trend" lines={0}><Sk w="30%" h="2rem" /><Sk shape="block" h={260} /></SkPanel>
+      <SkPanel className="flow" lines={1}><Sk shape="block" h={280} /></SkPanel>
+      <SkPanel className="where" lines={0}>
+        <div className="sk-row"><Sk shape="circle" w={200} /><div className="sk-panel grow"><Sk /><Sk w="80%" /><Sk w="60%" /><Sk w="40%" /></div></div>
+      </SkPanel>
+      {['avoid', 'recur', 'methods', 'upcoming'].map((k) => <SkPanel key={k} className={k} />)}
+    </Loading>
   )
 }
 

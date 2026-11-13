@@ -93,4 +93,10 @@ class PlansTest {
 		assertThatThrownBy(() -> PlansController.validate(new Plan(null, "Rent", BigDecimal.TEN, null, null, d("2026-11-01"), "Monthly", null, "x".repeat(2001))))
 			.isInstanceOf(ResponseStatusException.class);
 	}
+
+	@Test
+	void amountsMustFitTheColumn() {
+		for (String ok : List.of("0", "4.99", "9999999999.99", "1.500")) assertThat(PlansController.validAmount(new BigDecimal(ok))).as(ok).isTrue();
+		for (String bad : List.of("-1", "0.001", "10000000000", "1e400")) assertThat(PlansController.validAmount(new BigDecimal(bad))).as(bad).isFalse();
+	}
 }

@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { api, ApiError, fmtDate, money, signed, supabase, today } from './lib'
 import { ChangeBars, Donut, Legend, TableView, TimeChart, type Part, type Row, type Seg, type Series } from './Charts'
-import { ColorField, DateField, MonthField } from './Controls'
+import { ColorField, DateField, Loading, MonthField, Sk, SkPanel } from './Controls'
 import { Chevron } from './Dashboard'
-import { SUGGESTED } from './Lists'
+import { ListsSkeleton, SUGGESTED } from './Lists'
 import { parseAmount } from './Records'
 import {
   ASSET_CLASSES, CLASS_COLOR, PURPOSES, PURPOSE_COLOR, index, invested, isOpen, liquid, locked, monthsOf, prevMonth,
@@ -42,7 +42,7 @@ export function WealthPage({ sub }: { sub: string }) {
             : <button className="btn" onClick={load}>Retry</button>}
         </div>
       )}
-      {!w && !error && <div className="sk"><div className="sk-block" /></div>}
+      {!w && !error && (sub === 'accounts' ? <ListsSkeleton label="accounts" /> : <OverviewSkeleton />)}
       {w && sub === '' && <Overview w={w} onCheckIn={setCheckIn} />}
       {w && sub === 'accounts' && <Accounts w={w} onEdit={setEditing} />}
       {w && checkIn && <CheckIn w={w} initial={checkIn} onClose={() => setCheckIn(null)} onSaved={() => { setCheckIn(null); load() }} />}
@@ -52,6 +52,28 @@ export function WealthPage({ sub }: { sub: string }) {
 }
 
 // ---------------------------------------------------------------- overview
+
+// Mirrors the overview board, so the real panels land where the skeleton was.
+function OverviewSkeleton() {
+  return (
+    <Loading label="wealth">
+      <div className="period-bar"><Sk w={200} h="2.25rem" /><Sk w={280} h="2.5rem" /></div>
+      <div className="board sk-dash">
+        <section className="panel sk-panel hero">
+          <Sk w="40%" /><Sk w="60%" h="4.5rem" /><Sk w="45%" /><Sk w="35%" />
+          <Sk shape="block" h={24} />
+          <div className="sk-row"><Sk w="25%" h="2.5rem" /><Sk w="25%" h="2.5rem" /><Sk w="20%" h="2.5rem" /></div>
+        </section>
+        <SkPanel className="trend" lines={0}><Sk shape="block" h={300} /></SkPanel>
+        <SkPanel className="w-alloc" lines={0}><div className="sk-row"><Sk shape="circle" w={180} /><div className="sk-panel grow"><Sk /><Sk w="70%" /><Sk w="50%" /></div></div></SkPanel>
+        <SkPanel className="w-change" lines={0}><Sk shape="block" h={220} /></SkPanel>
+        <SkPanel className="w-emerg" />
+        <SkPanel className="w-invest" lines={0}><Sk shape="block" h={220} /></SkPanel>
+        <SkPanel className="w-grid" lines={5} />
+      </div>
+    </Loading>
+  )
+}
 
 function Overview({ w, onCheckIn }: { w: Wealth; onCheckIn: (month: string) => void }) {
   const thisMonth = today().slice(0, 8) + '01'
