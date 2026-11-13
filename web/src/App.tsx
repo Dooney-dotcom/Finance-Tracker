@@ -3,7 +3,7 @@ import type { Session } from '@supabase/supabase-js'
 import { api, SESSION_EXPIRED, supabase } from './lib'
 import { MfaChallenge, SetPassword, SignIn } from './Auth'
 import { Account } from './Account'
-import { Icon } from './Controls'
+import { Icon, Loading, Sk } from './Controls'
 import { Dashboard } from './Dashboard'
 import { RecordsPage } from './RecordsPage'
 import { Calendar } from './Calendar'
@@ -100,7 +100,13 @@ export default function App() {
   }, [])
   useIdleTimeout(gate === 'in')
 
-  if (gate === 'loading') return <div className="boot" aria-busy="true" />
+  // Session not known yet: the shell's frame, so signed-in users see the app take shape rather than a blank page.
+  if (gate === 'loading') return (
+    <Loading label="Finance Tracker" className="shell boot">
+      <header className="topbar"><span className="brand">Finance Tracker</span><Sk w={360} h={48} className="tabs" /></header>
+      <div className="page"><Sk shape="block" className="card" h={480} /></div>
+    </Loading>
+  )
   if (gate === 'signed-out') return <SignIn initialError={urlError} />
   if (gate === 'mfa') return <MfaChallenge onDone={() => decide(session)} />
   if (gate === 'set-password') return <SetPassword invite={invite} onDone={() => { setInvite(false); decide(session) }} />

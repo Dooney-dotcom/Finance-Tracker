@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
 import { api, ApiError, fmtDate, money, REASONS, RECURRENCE, shift, today, type Category, type Lists, type Rec } from './lib'
 import { Chevron } from './Dashboard'
-import { DateField, MonthField } from './Controls'
+import { DateField, Loading, MonthField, Sk } from './Controls'
 
 type Filters = {
   monthFrom?: string; monthTo?: string; dateFrom?: string; dateTo?: string
@@ -129,7 +129,7 @@ export function RecordsList({ lists, onListsChanged }: { lists: Lists; onListsCh
       {rows && rows.length > 0 && (
         <div className={'table-wrap' + (loading ? ' stale' : '')}>
           <table className="records">
-            <thead><tr><th scope="col">Date</th><th scope="col">Description</th><th scope="col">Category</th><th scope="col">Paid with</th><th scope="col">Avoidable</th><th scope="col">How often</th><th scope="col" className="num">Amount</th></tr></thead>
+            <RecordsHead />
             <tbody>
               {rows.map((r) => {
                 const cat = r.categoryId ? catById.get(r.categoryId) : undefined
@@ -175,7 +175,7 @@ export function RecordsList({ lists, onListsChanged }: { lists: Lists; onListsCh
           </table>
         </div>
       )}
-      {!rows && loading && <div className="sk"><div className="sk-block" /></div>}
+      {!rows && loading && <RecordsSkeleton />}
 
       {editing && (
         <RecordPanel rec={editing === 'new' ? null : editing} lists={lists} defaultDate={initial.add ?? (singleMonth && f.monthFrom !== thisMonth() ? f.monthFrom! : today())}
@@ -347,5 +347,26 @@ export function RecordPanel({ rec, lists, defaultDate, onClose, onSaved }:
         </div>
       )}
     </aside>
+  )
+}
+
+const RecordsHead = () => (
+  <thead><tr><th scope="col">Date</th><th scope="col">Description</th><th scope="col">Category</th><th scope="col">Paid with</th><th scope="col">Avoidable</th><th scope="col">How often</th><th scope="col" className="num">Amount</th></tr></thead>
+)
+
+/** The records table with placeholder rows, sized like real ones (a select is the tallest cell). */
+export function RecordsSkeleton() {
+  const widths = ['70%', '85%', '60%', '50%', '55%', '55%', '60%']
+  return (
+    <Loading label="records" className="table-wrap">
+      <table className="records">
+        <RecordsHead />
+        <tbody>
+          {Array.from({ length: 8 }, (_, r) => (
+            <tr key={r}>{widths.map((w, c) => <td key={c} style={{ height: 50 }}><Sk w={c === 1 ? `${50 + ((r * 17) % 40)}%` : w} /></td>)}</tr>
+          ))}
+        </tbody>
+      </table>
+    </Loading>
   )
 }
