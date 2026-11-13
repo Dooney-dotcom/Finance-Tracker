@@ -10,9 +10,9 @@ target/
 dist/
 
 # Local tooling state; design mocks hold real figures.
-.impeccable/mocks/
-.impeccable/review/
-.impeccable/hook.cache.json
+.impeccable/
+.agents/
+skills-lock.json
 .claude/
 graphify-out/
 .DS_Store
