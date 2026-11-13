@@ -1,6 +1,7 @@
 package app.financetracker.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -9,6 +10,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.web.server.ResponseStatusException;
 
 import app.financetracker.api.Plans.Candidate;
 import app.financetracker.api.Plans.Override;
@@ -82,6 +84,14 @@ class PlansTest {
 			plan("Monthly", "2026-01-01", "2026-10-01", "50.00", null), // ended
 			plan("Once", "2026-12-01", null, "999.00", null));
 		assertThat(Plans.monthlyCommitment(plans, d("2026-11-04"))).isEqualByComparingTo("540.00");
+	}
+
+	@Test
+	void notesAreCapped() {
+		var p = new Plan(null, "Rent", BigDecimal.TEN, null, null, d("2026-11-01"), "Monthly", null, "x".repeat(2000));
+		assertThat(PlansController.validate(p).notes()).hasSize(2000);
+		assertThatThrownBy(() -> PlansController.validate(new Plan(null, "Rent", BigDecimal.TEN, null, null, d("2026-11-01"), "Monthly", null, "x".repeat(2001))))
+			.isInstanceOf(ResponseStatusException.class);
 	}
 
 	@Test

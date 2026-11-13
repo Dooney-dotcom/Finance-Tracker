@@ -46,7 +46,7 @@ class PlansController {
 
 	record OccurrenceIn(UUID transactionId, Boolean skipped, BigDecimal amount) {}
 
-	private static final String PLAN_COLUMNS = "id, description, amount, category_id, payment_method_id, first_due, frequency, last_due, notes";
+	private static final String PLAN_COLUMNS = "id, description, amount, category_id, payment_method_id, first_due, frequency, last_due";
 
 	private final UserDb db;
 
@@ -57,7 +57,7 @@ class PlansController {
 	@GetMapping
 	List<Plan> list(@AuthenticationPrincipal Jwt jwt) {
 		UUID uid = user(jwt);
-		return db.run(jwt, s -> plans(s, uid, null));
+		return db.run(jwt, s -> plans(s, uid, null, true));
 	}
 
 	@PostMapping
@@ -107,7 +107,7 @@ class PlansController {
 		UUID uid = user(jwt);
 		return db.run(jwt, s -> {
 			Map<String, Override> overrides = overrides(s, uid, from, to);
-			return Plans.expand(plans(s, uid, null), overrides, candidates(s, uid, from, to), from, to, LocalDate.now(ROME));
+			return Plans.expand(plans(s, uid, null, false), overrides, candidates(s, uid, from, to), from, to, LocalDate.now(ROME));
 		});
 	}
 
@@ -165,8 +165,9 @@ class PlansController {
 
 	// ---------- helpers ----------
 
-	static List<Plan> plans(JdbcClient s, UUID uid, UUID id) {
-		return s.sql("select " + PLAN_COLUMNS + " from plans where user_id = :uid" + (id == null ? "" : " and id = :id") + " order by lower(description)")
+	/** Notes are only read back by the plans list; occurrences and the dashboard never return them. */
+	static List<Plan> plans(JdbcClient s, UUID uid, UUID id, boolean withNotes) {
+		return s.sql("select " + PLAN_COLUMNS + (withNotes ? ", notes" : ", null") + " from plans where user_id = :uid" + (id == null ? "" : " and id = :id") + " order by lower(description)")
 			.param("uid", uid).params(id == null ? Map.of() : Map.of("id", id))
 			.query((rs, i) -> new Plan(rs.getObject(1, UUID.class), rs.getString(2), rs.getBigDecimal(3), rs.getObject(4, UUID.class),
 				rs.getObject(5, UUID.class), rs.getObject(6, LocalDate.class), rs.getString(7), rs.getObject(8, LocalDate.class), rs.getString(9)))
@@ -199,7 +200,7 @@ class PlansController {
 
 	/** The plan, provided `due` is one of its dates. */
 	private static Plan occurrenceOf(JdbcClient s, UUID uid, UUID id, LocalDate due) {
-		Plan p = plans(s, uid, id).stream().findFirst().orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+		Plan p = plans(s, uid, id, false).stream().findFirst().orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 		if (!Plans.fallsOn(p, due)) throw bad("That plan isn’t due on that day.");
 		return p;
 	}
@@ -225,7 +226,7 @@ class PlansController {
 
 	private static final BigDecimal MAX_AMOUNT = new BigDecimal("10000000000");
 
-	private static Plan validate(Plan in) {
+	static Plan validate(Plan in) {
 		String d = in.description() == null ? "" : in.description().trim();
 		if (d.isEmpty() || d.length() > 200) throw bad("Describe it (up to 200 characters).");
 		if (in.amount() == null || !validAmount(in.amount())) throw bad("Enter an amount of zero or more, in euros and cents.");
@@ -234,6 +235,7 @@ class PlansController {
 		LocalDate last = in.frequency().equals("Once") ? null : in.lastDue();
 		if (last != null && last.isBefore(in.firstDue())) throw bad("It can’t end before it starts.");
 		String notes = in.notes() == null || in.notes().isBlank() ? null : in.notes().trim();
+		if (notes != null && notes.length() > 2000) throw bad("Notes can be up to 2,000 characters.");
 		return new Plan(null, d, in.amount(), in.categoryId(), in.paymentMethodId(), in.firstDue(), in.frequency(), last, notes);
 	}
 
