@@ -115,7 +115,7 @@ class PlansController {
 	@PutMapping("/{id}/occurrences/{due}")
 	void setOccurrence(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id,
 			@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate due, @RequestBody OccurrenceIn in) {
-		if (in.amount() != null && in.amount().signum() < 0) throw bad("The amount can’t be negative.");
+		if (in.amount() != null && !validAmount(in.amount())) throw bad("Enter an amount of zero or more, in euros and cents.");
 		UUID uid = user(jwt);
 		linked(() -> db.run(jwt, s -> {
 			occurrenceOf(s, uid, id, due);
@@ -218,10 +218,17 @@ class PlansController {
 		if (!kind.equals("expense")) throw bad("Pick an expense category.");
 	}
 
+	/** Fits plans.amount / plan_occurrences.amount, numeric(12,2) with amount >= 0. */
+	static boolean validAmount(BigDecimal a) {
+		return a.signum() >= 0 && a.compareTo(MAX_AMOUNT) < 0 && a.stripTrailingZeros().scale() <= 2;
+	}
+
+	private static final BigDecimal MAX_AMOUNT = new BigDecimal("10000000000");
+
 	private static Plan validate(Plan in) {
 		String d = in.description() == null ? "" : in.description().trim();
 		if (d.isEmpty() || d.length() > 200) throw bad("Describe it (up to 200 characters).");
-		if (in.amount() == null || in.amount().signum() < 0 || in.amount().scale() > 2) throw bad("Enter an amount of zero or more, in euros and cents.");
+		if (in.amount() == null || !validAmount(in.amount())) throw bad("Enter an amount of zero or more, in euros and cents.");
 		if (in.firstDue() == null) throw bad("Pick the date it’s due.");
 		if (in.frequency() == null || !Plans.STEP.containsKey(in.frequency())) throw bad("Say how often it repeats.");
 		LocalDate last = in.frequency().equals("Once") ? null : in.lastDue();
