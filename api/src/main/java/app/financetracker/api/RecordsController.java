@@ -13,6 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 
@@ -242,16 +243,22 @@ class RecordsController {
 				.param("uid", uid).query(UUID.class).optional()
 				.orElseGet(() -> s.sql("insert into payment_methods (user_id, name) values (:uid, 'Revolut') returning id")
 					.param("uid", uid).query(UUID.class).single());
-			int added = 0;
-			for (Rec r : recs) {
-				checkCategoryKind(s, r);
-				Map<String, Object> p = params(uid, r);
-				p.put("pm", revolut);
-				added += s.sql("""
-						insert into transactions (user_id, description, amount, type, date, month, category_id, payment_method_id)
-						values (:uid, :d, :a, cast(:type as transaction_type), cast(:date as timestamptz), :month, cast(:cat as uuid), cast(:pm as uuid))
-						on conflict on constraint transactions_no_duplicates do nothing""").params(p).update();
-			}
+			// One lookup for every category used, one insert for every row: a fixed number of round trips at any size.
+			Map<UUID, String> kinds = new HashMap<>();
+			List<String> catIds = recs.stream().map(Rec::categoryId).filter(Objects::nonNull).distinct().map(UUID::toString).toList();
+			if (!catIds.isEmpty()) s.sql("select id, kind from categories where id = any(cast(:ids as uuid[]))").param("ids", catIds.toArray(String[]::new))
+				.query(rs -> { kinds.put(rs.getObject(1, UUID.class), rs.getString(2)); });
+			for (Rec r : recs) checkCategoryKind(kinds, r);
+			List<Map<String, Object>> ps = recs.stream().map(r -> params(uid, r)).toList();
+			int added = s.sql("""
+					insert into transactions (user_id, description, amount, type, date, month, category_id, payment_method_id)
+					select :uid, d, cast(a as numeric), cast(t as transaction_type), cast(dt as timestamptz), cast(m as date), cast(c as uuid), :pm
+					from unnest(cast(:d as text[]), cast(:a as text[]), cast(:t as text[]), cast(:dt as text[]), cast(:m as text[]), cast(:c as text[])) as x(d, a, t, dt, m, c)
+					on conflict on constraint transactions_no_duplicates do nothing""")
+				.param("uid", uid).param("pm", revolut)
+				.param("d", column(ps, "d")).param("a", column(ps, "a")).param("t", column(ps, "type"))
+				.param("dt", column(ps, "date")).param("m", column(ps, "month")).param("c", column(ps, "cat"))
+				.update();
 			return new ImportResult(added, recs.size() - added);
 		});
 	}
@@ -294,7 +301,19 @@ class RecordsController {
 		if (r.categoryId() == null) return;
 		String kind = s.sql("select kind from categories where id = :id").param("id", r.categoryId()).query(String.class).optional()
 			.orElseThrow(() -> bad("That category doesn’t exist."));
+		checkCategoryKind(Map.of(r.categoryId(), kind), r);
+	}
+
+	/** Same check against kinds already loaded (by id); a missing id is a category the user can't see. */
+	private static void checkCategoryKind(Map<UUID, String> kinds, Rec r) {
+		if (r.categoryId() == null) return;
+		String kind = kinds.get(r.categoryId());
+		if (kind == null) throw bad("That category doesn’t exist.");
 		if (!kind.equals(r.type().equals("Income") ? "income" : "expense")) throw bad("That category is for " + kind + ", not this record.");
+	}
+
+	private static String[] column(List<Map<String, Object>> rows, String key) {
+		return rows.stream().map(p -> p.get(key) == null ? null : p.get(key).toString()).toArray(String[]::new);
 	}
 
 	private static Map<String, Object> params(UUID uid, Rec r) {

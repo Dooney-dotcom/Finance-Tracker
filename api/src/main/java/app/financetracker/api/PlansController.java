@@ -105,10 +105,10 @@ class PlansController {
 			@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
 		if (to.isBefore(from) || ChronoUnit.DAYS.between(from, to) > 400) throw bad("Pick a range of up to a year.");
 		UUID uid = user(jwt);
-		return db.run(jwt, s -> {
-			Map<String, Override> overrides = overrides(s, uid, from, to);
-			return Plans.expand(plans(s, uid, null, false), overrides, candidates(s, uid, from, to), from, to, LocalDate.now(ROME));
-		});
+		record Loaded(List<Plan> plans, Map<String, Override> overrides, List<Candidate> candidates) {}
+		Loaded in = db.run(jwt, s -> new Loaded(plans(s, uid, null, false), overrides(s, uid, from, to), candidates(s, uid, from, to)));
+		// Matching runs after the connection is back in the pool.
+		return Plans.expand(in.plans(), in.overrides(), in.candidates(), from, to, LocalDate.now(ROME));
 	}
 
 	/** Link a record (confirming a match), skip, or change the amount for one occurrence. */
