@@ -112,9 +112,26 @@ export function MfaChallenge({ onDone }: { onDone: () => void }) {
   )
 }
 
+/** An invite or reset link opened while someone is signed in: nothing changes until they choose. */
+export function SwitchAccount({ email, invite, onStay, onSwitch }: { email: string; invite: boolean; onStay: () => void; onSwitch: () => void }) {
+  const [busy, setBusy] = useState(false)
+  return (
+    <Frame title="You’re already signed in">
+      <p className="lede">
+        You’re signed in as <strong>{email}</strong>. This {invite ? 'invite' : 'password reset'} link may be for a different account.
+        Using it signs you out here first.
+      </p>
+      <div className="stack">
+        <button className="btn primary" onClick={onStay} disabled={busy}>Stay signed in as {email}</button>
+        <button className="btn" onClick={() => { setBusy(true); onSwitch() }} disabled={busy}>{busy ? 'Opening the link…' : 'Sign out and use the link'}</button>
+      </div>
+    </Frame>
+  )
+}
+
 export const MIN_PASSWORD = 12
 
-export function SetPassword({ invite, onDone }: { invite: boolean; onDone: () => void }) {
+export function SetPassword({ invite, email, onDone }: { invite: boolean; email: string; onDone: () => void }) {
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
   const [error, setError] = useState('')
@@ -135,6 +152,7 @@ export function SetPassword({ invite, onDone }: { invite: boolean; onDone: () =>
 
   return (
     <Frame title={invite ? 'Welcome — choose a password' : 'Choose a new password'}>
+      <p className="lede">For <strong>{email}</strong></p>
       <form onSubmit={submit} className="stack">
         <Field label={`New password (at least ${MIN_PASSWORD} characters)`} type="password" value={password} onChange={setPassword} autoComplete="new-password" />
         <Field label="Repeat it" type="password" value={confirm} onChange={setConfirm} autoComplete="new-password" />
