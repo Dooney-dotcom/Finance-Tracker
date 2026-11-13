@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import { api, ApiError, fmtDate, money, shift, today, type Lists, type Occurrence, type Plan, type Rec } from './lib'
-import { Icon } from './Controls'
+import { Icon, Sk } from './Controls'
 import { RecordPanel, Swatch } from './Records'
 import { PlanPanel } from './PlanPanel'
 
@@ -138,7 +138,8 @@ export function Calendar() {
       {error && <div className="banner" role="alert"><p>{error}</p><button className="btn" onClick={() => setReload((n) => n + 1)}>Retry</button></div>}
 
       <div className="cal-layout">
-        <div className={'month' + (loading ? ' stale' : '')}>
+        <div className={'month' + (loading && rows ? ' stale' : '')} aria-busy={!rows}>
+          {!rows && <span className="sr-only">Loading calendar</span>}
           <div className="month-head" aria-hidden="true">{WEEKDAYS.map((w) => <span key={w}>{w}</span>)}</div>
           <div className="month-grid-big" role="grid" aria-label={fmtDate(month, { month: 'long', year: 'numeric' })} ref={grid} onKeyDown={onKey}>
             {Array.from({ length: days.length / 7 }, (_, r) => (
@@ -156,6 +157,7 @@ export function Calendar() {
                       aria-label={`${fmtDate(d.iso, { weekday: 'long', day: 'numeric', month: 'long' })}: ${e ? `spent ${money(e.spent)}${e.earned ? `, earned ${money(e.earned)}` : ''}, ${e.recs.length} record${e.recs.length === 1 ? '' : 's'}` : 'no records'}${due ? `, ${money(dueSum)} planned${due.some((o) => o.status === 'overdue') ? ', overdue' : ''}` : ''}`}
                       onClick={() => { setSelected(d.iso); setFocus(d.iso) }}>
                       <span className="num">{d.day}</span>
+                      {!rows && d.inMonth && <Sk w="70%" />}
                       {e && e.spent > 0 && <span className="spent">{money(e.spent)}</span>}
                       {e && e.earned > 0 && <span className="earned">+{money(e.earned)}</span>}
                       {due && <span className={'planned' + (due.some((o) => o.status === 'overdue') ? ' overdue' : '')} title={due.map((o) => o.description).join(', ')}>{money(dueSum)}</span>}
@@ -179,8 +181,8 @@ export function Calendar() {
             <div className="panel-head">
               <h2 id="day-h">{fmtDate(selected, { weekday: 'long', day: 'numeric', month: 'long' })}</h2>
             </div>
-            {sel
-              ? <p className="summary">Spent <strong>{money(sel.spent)}</strong>{sel.earned > 0 && <> · earned <strong className="pos">{money(sel.earned)}</strong></>}</p>
+            {!rows ? <><Sk w="60%" /><Sk w="90%" /><Sk w="75%" /></>
+              : sel ? <p className="summary">Spent <strong>{money(sel.spent)}</strong>{sel.earned > 0 && <> · earned <strong className="pos">{money(sel.earned)}</strong></>}</p>
               : <p className="empty">Nothing recorded on this day.</p>}
             {sel && (
               <ul className="day-list">

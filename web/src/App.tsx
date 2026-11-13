@@ -1,15 +1,18 @@
-import { useEffect, useState } from 'react'
-import type { Session } from '@supabase/supabase-js'
+import { useEffect, useRef, useState } from 'react'
+import type { AuthMFAGetAuthenticatorAssuranceLevelResponse, Session } from '@supabase/supabase-js'
 import { api, SESSION_EXPIRED, supabase } from './lib'
-import { MfaChallenge, SetPassword, SignIn } from './Auth'
+import { MfaChallenge, SetPassword, SignIn, SwitchAccount } from './Auth'
 import { Account } from './Account'
-import { Icon } from './Controls'
+import { Icon, Loading, Sk } from './Controls'
 import { Dashboard } from './Dashboard'
 import { RecordsPage } from './RecordsPage'
 import { Calendar } from './Calendar'
 import { WealthPage } from './Wealth.tsx'
 
-type Gate = 'loading' | 'signed-out' | 'mfa' | 'set-password' | 'in'
+type Gate = 'loading' | 'signed-out' | 'switch' | 'mfa' | 'set-password' | 'in'
+type Link = { tokenHash: string; type: 'invite' | 'recovery' }
+
+const needsMfa = ({ data }: AuthMFAGetAuthenticatorAssuranceLevelResponse) => !!data && data.nextLevel === 'aal2' && data.currentLevel !== 'aal2'
 
 const TABS = [['dashboard', 'Dashboard'], ['records', 'Records'], ['calendar', 'Calendar'], ['wealth', 'Wealth']] as const
 
@@ -67,13 +70,35 @@ export default function App() {
   const [gate, setGate] = useState<Gate>('loading')
   const [invite, setInvite] = useState(false)
   const [urlError, setUrlError] = useState<string>()
+  const [link, setLink] = useState<Link>()
+  // While an invite/recovery link is being handled, that flow owns the gate; auth events don't move it.
+  const flow = useRef<null | 'link' | 'set-password'>(null)
   const route = useRoute()
 
   async function decide(s: Session | null) {
+    if (flow.current) return
     setSession(s)
     if (!s) return setGate('signed-out')
-    const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
-    setGate(data && data.nextLevel === 'aal2' && data.currentLevel !== 'aal2' ? 'mfa' : 'in')
+    setGate(needsMfa(await supabase.auth.mfa.getAuthenticatorAssuranceLevel()) ? 'mfa' : 'in')
+  }
+
+  /** The new password is set only after 2FA, when the account has it. */
+  async function toSetPassword(s: Session) {
+    flow.current = 'set-password'
+    setSession(s)
+    setGate(needsMfa(await supabase.auth.mfa.getAuthenticatorAssuranceLevel()) ? 'mfa' : 'set-password')
+  }
+
+  async function openLink(l: Link) {
+    flow.current = 'link'
+    const { data, error } = await supabase.auth.verifyOtp({ token_hash: l.tokenHash, type: l.type })
+    if (error || !data.session) {
+      flow.current = null
+      setUrlError('That link has expired or was already used. Ask for a new one.')
+      return decide(null)
+    }
+    setInvite(l.type === 'invite')
+    toSetPassword(data.session)
   }
 
   useEffect(() => {
@@ -82,15 +107,20 @@ export default function App() {
       ? 'That Google account hasn’t been invited. Ask the owner for an invite.' : 'Sign-in didn’t complete. Try again.')
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
-      if (event === 'PASSWORD_RECOVERY') { setSession(s); setGate('set-password'); return }
+      // Signing out of the 2FA step abandons the password change.
+      if (event === 'SIGNED_OUT' && flow.current === 'set-password') flow.current = null
       // Defer: calling Supabase inside this callback can deadlock its auth lock.
+      if (event === 'PASSWORD_RECOVERY' && s && flow.current !== 'link') { flow.current = 'set-password'; setTimeout(() => toSetPassword(s), 0); return }
       setTimeout(() => decide(s), 0)
     })
 
     if (tokenHash && (type === 'invite' || type === 'recovery')) {
-      supabase.auth.verifyOtp({ token_hash: tokenHash, type }).then(({ data, error }) => {
-        if (error || !data.session) { setUrlError('That link has expired or was already used. Ask for a new one.'); setGate('signed-out') }
-        else { setSession(data.session); setInvite(type === 'invite'); setGate('set-password') }
+      // These links aren't tied to this browser. Someone already signed in is asked before their session is replaced.
+      const l: Link = { tokenHash, type }
+      flow.current = 'link'
+      supabase.auth.getSession().then(({ data }) => {
+        if (!data.session) return openLink(l)
+        setLink(l); setSession(data.session); setGate('switch')
       })
     }
     // Local scope: revokes this session's refresh token, leaves other devices signed in.
@@ -100,10 +130,23 @@ export default function App() {
   }, [])
   useIdleTimeout(gate === 'in')
 
-  if (gate === 'loading') return <div className="boot" aria-busy="true" />
+  // Session not known yet: the shell's frame, so signed-in users see the app take shape rather than a blank page.
+  if (gate === 'loading') return (
+    <Loading label="Finance Tracker" className="shell boot">
+      <header className="topbar"><span className="brand">Finance Tracker</span><Sk w={360} h={48} className="tabs" /></header>
+      <div className="page"><Sk shape="block" className="card" h={480} /></div>
+    </Loading>
+  )
   if (gate === 'signed-out') return <SignIn initialError={urlError} />
-  if (gate === 'mfa') return <MfaChallenge onDone={() => decide(session)} />
-  if (gate === 'set-password') return <SetPassword invite={invite} onDone={() => { setInvite(false); decide(session) }} />
+  if (gate === 'switch') return (
+    <SwitchAccount email={session?.user.email ?? ''} invite={link?.type === 'invite'}
+      onStay={() => { flow.current = null; setLink(undefined); decide(session) }}
+      onSwitch={async () => { await supabase.auth.signOut({ scope: 'local' }); openLink(link!); setLink(undefined) }} />
+  )
+  if (gate === 'mfa') return <MfaChallenge onDone={() => flow.current ? setGate('set-password') : decide(session)} />
+  if (gate === 'set-password') return (
+    <SetPassword invite={invite} email={session?.user.email ?? ''} onDone={() => { flow.current = null; setInvite(false); decide(session) }} />
+  )
 
   return (
     <div className="shell">

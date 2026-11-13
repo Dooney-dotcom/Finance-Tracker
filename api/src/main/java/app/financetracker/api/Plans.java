@@ -8,7 +8,9 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 
 /** Pure logic for planned expenses: which dates a rule falls on, and which real record probably paid each one. */
@@ -62,6 +64,9 @@ final class Plans {
 			for (LocalDate d : dates(p, from, to)) raw.add(new Raw(p, d, overrides.get(key(p.id(), d))));
 		raw.sort(Comparator.comparing(Raw::due).thenComparing(r -> r.plan().description()));
 
+		// By day, so each occurrence only looks at the records within MATCH_DAYS of it.
+		NavigableMap<LocalDate, List<Candidate>> byDay = new TreeMap<>();
+		for (Candidate c : candidates) byDay.computeIfAbsent(c.day(), k -> new ArrayList<>()).add(c);
 		Set<UUID> taken = new HashSet<>();
 		List<Occurrence> out = new ArrayList<>();
 		for (Raw r : raw) {
@@ -71,7 +76,7 @@ final class Plans {
 				: o != null && o.skipped() ? "skipped"
 				: r.due().isBefore(today) ? "overdue" : "upcoming";
 			Candidate match = status.equals("overdue") || status.equals("upcoming")
-				? best(r.plan(), r.due(), amount, candidates, taken) : null;
+				? best(r.plan(), r.due(), amount, byDay, taken) : null;
 			if (match != null) taken.add(match.id());
 			out.add(new Occurrence(r.plan().id(), r.due(), r.plan().description(), amount, r.plan().categoryId(),
 				r.plan().paymentMethodId(), r.plan().frequency(), status, o == null ? null : o.transactionId(), match));
@@ -80,9 +85,9 @@ final class Plans {
 	}
 
 	/** Same payment method (when the plan names one), within MATCH_DAYS of the due date and MATCH_SHARE of the amount; closest date wins. */
-	static Candidate best(Plan p, LocalDate due, BigDecimal amount, List<Candidate> candidates, Set<UUID> taken) {
+	static Candidate best(Plan p, LocalDate due, BigDecimal amount, NavigableMap<LocalDate, List<Candidate>> byDay, Set<UUID> taken) {
 		BigDecimal tolerance = amount.multiply(MATCH_SHARE);
-		return candidates.stream()
+		return byDay.subMap(due.minusDays(MATCH_DAYS), true, due.plusDays(MATCH_DAYS), true).values().stream().flatMap(List::stream)
 			.filter(c -> !taken.contains(c.id()))
 			.filter(c -> p.paymentMethodId() == null || p.paymentMethodId().equals(c.paymentMethodId()))
 			.filter(c -> Math.abs(ChronoUnit.DAYS.between(due, c.day())) <= MATCH_DAYS)

@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { api, ApiError, type Category, type Lists, type Method } from './lib'
-import { ColorField } from './Controls'
+import { ColorField, Loading, Sk, SkPanel } from './Controls'
 
 // Suggested colours for new categories; red, blue and ochre stay reserved for expense, income and attention.
 export const SUGGESTED = ['#6250d6', '#eb6834', '#1baf7a', '#e87ba4', '#008300', '#0f8b8d', '#8b5a2b', '#b8a400', '#a33ea1', '#4a4e9e', '#c0a062', '#7a8a99', '#d65db1', '#5b8c00', '#3d6b6e', '#7d5ba6']
@@ -116,5 +116,22 @@ export function Methods({ lists, onChange }: { lists: Lists; onChange: () => voi
         <AddForm label="New payment method" onAdd={async (name) => { await api('/api/payment-methods', { method: 'POST', json: { name } }); onChange() }} />
       </section>
     </div>
+  )
+}
+
+/** Panels of name rows, the shape of Categories, Payment methods and Wealth accounts. */
+export function ListsSkeleton({ label, panels = 1 }: { label: string; panels?: number }) {
+  return (
+    <Loading label={label} className="lists">
+      {Array.from({ length: panels }, (_, p) => (
+        <SkPanel key={p} lines={0}>
+          <ul className="list">
+            {Array.from({ length: 5 }, (_, i) => (
+              <li key={i} className="list-item"><div className="list-row" style={{ minHeight: 44 }}><Sk shape="circle" w={24} /><Sk w={`${40 + ((i * 13) % 30)}%`} /></div></li>
+            ))}
+          </ul>
+        </SkPanel>
+      ))}
+    </Loading>
   )
 }

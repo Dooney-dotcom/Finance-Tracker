@@ -179,3 +179,24 @@ export function ColorField({ label, value, palette, onChange }: { label: string;
     </>
   )
 }
+
+/** A grey placeholder in the shape of the content it stands in for. Purely visual: wrap a view's skeleton in <Loading>. */
+export function Sk({ shape = 'line', w, h, className = '' }: { shape?: 'line' | 'block' | 'circle'; w?: number | string; h?: number | string; className?: string }) {
+  return <span className={`sk-${shape} ${className}`} style={{ width: w, height: h }} aria-hidden="true" />
+}
+
+/** The busy region around a skeleton, named for screen readers. */
+export function Loading({ label, className, children }: { label: string; className?: string; children: ReactNode }) {
+  return <div className={className} aria-busy="true"><span className="sr-only">Loading {label}</span>{children}</div>
+}
+
+/** A panel's title row followed by `lines` text lines; covers most panels while they load. */
+export function SkPanel({ className = '', lines = 3, children }: { className?: string; lines?: number; children?: ReactNode }) {
+  return (
+    <section className={'panel sk-panel ' + className}>
+      <Sk w="40%" h="1.25rem" />
+      {children}
+      {Array.from({ length: lines }, (_, i) => <Sk key={i} w={`${90 - i * 15}%`} />)}
+    </section>
+  )
+}

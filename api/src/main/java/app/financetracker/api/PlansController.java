@@ -46,7 +46,7 @@ class PlansController {
 
 	record OccurrenceIn(UUID transactionId, Boolean skipped, BigDecimal amount) {}
 
-	private static final String PLAN_COLUMNS = "id, description, amount, category_id, payment_method_id, first_due, frequency, last_due, notes";
+	private static final String PLAN_COLUMNS = "id, description, amount, category_id, payment_method_id, first_due, frequency, last_due";
 
 	private final UserDb db;
 
@@ -57,7 +57,7 @@ class PlansController {
 	@GetMapping
 	List<Plan> list(@AuthenticationPrincipal Jwt jwt) {
 		UUID uid = user(jwt);
-		return db.run(jwt, s -> plans(s, uid, null));
+		return db.run(jwt, s -> plans(s, uid, null, true));
 	}
 
 	@PostMapping
@@ -105,17 +105,17 @@ class PlansController {
 			@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
 		if (to.isBefore(from) || ChronoUnit.DAYS.between(from, to) > 400) throw bad("Pick a range of up to a year.");
 		UUID uid = user(jwt);
-		return db.run(jwt, s -> {
-			Map<String, Override> overrides = overrides(s, uid, from, to);
-			return Plans.expand(plans(s, uid, null), overrides, candidates(s, uid, from, to), from, to, LocalDate.now(ROME));
-		});
+		record Loaded(List<Plan> plans, Map<String, Override> overrides, List<Candidate> candidates) {}
+		Loaded in = db.run(jwt, s -> new Loaded(plans(s, uid, null, false), overrides(s, uid, from, to), candidates(s, uid, from, to)));
+		// Matching runs after the connection is back in the pool.
+		return Plans.expand(in.plans(), in.overrides(), in.candidates(), from, to, LocalDate.now(ROME));
 	}
 
 	/** Link a record (confirming a match), skip, or change the amount for one occurrence. */
 	@PutMapping("/{id}/occurrences/{due}")
 	void setOccurrence(@AuthenticationPrincipal Jwt jwt, @PathVariable UUID id,
 			@PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate due, @RequestBody OccurrenceIn in) {
-		if (in.amount() != null && in.amount().signum() < 0) throw bad("The amount can’t be negative.");
+		if (in.amount() != null && !validAmount(in.amount())) throw bad("Enter an amount of zero or more, in euros and cents.");
 		UUID uid = user(jwt);
 		linked(() -> db.run(jwt, s -> {
 			occurrenceOf(s, uid, id, due);
@@ -165,8 +165,9 @@ class PlansController {
 
 	// ---------- helpers ----------
 
-	static List<Plan> plans(JdbcClient s, UUID uid, UUID id) {
-		return s.sql("select " + PLAN_COLUMNS + " from plans where user_id = :uid" + (id == null ? "" : " and id = :id") + " order by lower(description)")
+	/** Notes are only read back by the plans list; occurrences and the dashboard never return them. */
+	static List<Plan> plans(JdbcClient s, UUID uid, UUID id, boolean withNotes) {
+		return s.sql("select " + PLAN_COLUMNS + (withNotes ? ", notes" : ", null") + " from plans where user_id = :uid" + (id == null ? "" : " and id = :id") + " order by lower(description)")
 			.param("uid", uid).params(id == null ? Map.of() : Map.of("id", id))
 			.query((rs, i) -> new Plan(rs.getObject(1, UUID.class), rs.getString(2), rs.getBigDecimal(3), rs.getObject(4, UUID.class),
 				rs.getObject(5, UUID.class), rs.getObject(6, LocalDate.class), rs.getString(7), rs.getObject(8, LocalDate.class), rs.getString(9)))
@@ -199,7 +200,7 @@ class PlansController {
 
 	/** The plan, provided `due` is one of its dates. */
 	private static Plan occurrenceOf(JdbcClient s, UUID uid, UUID id, LocalDate due) {
-		Plan p = plans(s, uid, id).stream().findFirst().orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+		Plan p = plans(s, uid, id, false).stream().findFirst().orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 		if (!Plans.fallsOn(p, due)) throw bad("That plan isn’t due on that day.");
 		return p;
 	}
@@ -218,15 +219,23 @@ class PlansController {
 		if (!kind.equals("expense")) throw bad("Pick an expense category.");
 	}
 
-	private static Plan validate(Plan in) {
+	/** Fits plans.amount / plan_occurrences.amount, numeric(12,2) with amount >= 0. */
+	static boolean validAmount(BigDecimal a) {
+		return a.signum() >= 0 && a.compareTo(MAX_AMOUNT) < 0 && a.stripTrailingZeros().scale() <= 2;
+	}
+
+	private static final BigDecimal MAX_AMOUNT = new BigDecimal("10000000000");
+
+	static Plan validate(Plan in) {
 		String d = in.description() == null ? "" : in.description().trim();
 		if (d.isEmpty() || d.length() > 200) throw bad("Describe it (up to 200 characters).");
-		if (in.amount() == null || in.amount().signum() < 0 || in.amount().scale() > 2) throw bad("Enter an amount of zero or more, in euros and cents.");
+		if (in.amount() == null || !validAmount(in.amount())) throw bad("Enter an amount of zero or more, in euros and cents.");
 		if (in.firstDue() == null) throw bad("Pick the date it’s due.");
 		if (in.frequency() == null || !Plans.STEP.containsKey(in.frequency())) throw bad("Say how often it repeats.");
 		LocalDate last = in.frequency().equals("Once") ? null : in.lastDue();
 		if (last != null && last.isBefore(in.firstDue())) throw bad("It can’t end before it starts.");
 		String notes = in.notes() == null || in.notes().isBlank() ? null : in.notes().trim();
+		if (notes != null && notes.length() > 2000) throw bad("Notes can be up to 2,000 characters.");
 		return new Plan(null, d, in.amount(), in.categoryId(), in.paymentMethodId(), in.firstDue(), in.frequency(), last, notes);
 	}
 
