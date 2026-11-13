@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 /** Parses Revolut's account-statement CSV (Italian or English headers) into importable rows. Pure: no I/O. */
 public final class RevolutCsv {
@@ -54,9 +55,9 @@ public final class RevolutCsv {
 				String type = norm(get(row, col, "type"));
 				String state = norm(get(row, col, "state"));
 				String description = get(row, col, "description").trim();
-				BigDecimal raw = new BigDecimal(get(row, col, "amount").trim());
+				BigDecimal raw = number(get(row, col, "amount").trim());
 				String fee = col.containsKey("fee") ? get(row, col, "fee").trim() : "";
-				BigDecimal amount = raw.abs().add(fee.isEmpty() || raw.signum() > 0 ? BigDecimal.ZERO : new BigDecimal(fee).abs());
+				BigDecimal amount = raw.abs().add(fee.isEmpty() || raw.signum() > 0 ? BigDecimal.ZERO : number(fee).abs());
 				LocalDateTime started = LocalDateTime.parse(get(row, col, "started").trim(), TS);
 				boolean income = raw.signum() > 0;
 
@@ -66,12 +67,23 @@ public final class RevolutCsv {
 				else if (type.equals("ricarica") || type.equals("topup")) { status = Status.SKIPPED; reason = "Top-up between your own accounts"; }
 				else if (raw.signum() == 0) { status = Status.SKIPPED; reason = "Zero amount"; }
 				else if (!get(row, col, "currency").trim().equalsIgnoreCase("EUR")) { status = Status.FLAGGED; reason = "Not in EUR (" + get(row, col, "currency").trim() + "); add it by hand"; }
+				else if (amount.compareTo(MAX) >= 0 || amount.stripTrailingZeros().scale() > 2) { status = Status.FLAGGED; reason = "Amount out of range; add it by hand"; }
 				out.add(new Line(line, started, description, amount, income, status, reason));
 			} catch (RuntimeException e) {
 				out.add(new Line(line, null, String.join(",", row), null, false, Status.FLAGGED, "Couldn’t read this row"));
 			}
 		}
 		return out;
+	}
+
+	// Same range as RecordsController.validate: under a billion, euros and cents.
+	private static final BigDecimal MAX = new BigDecimal("1000000000");
+	private static final Pattern PLAIN = Pattern.compile("-?\\d{1,12}(\\.\\d{1,8})?");
+
+	/** Plain decimals only: no exponent, bounded digits, so the arithmetic on them is constant-time. */
+	private static BigDecimal number(String s) {
+		if (!PLAIN.matcher(s).matches()) throw new IllegalArgumentException("Unreadable amount");
+		return new BigDecimal(s);
 	}
 
 	private static String get(List<String> row, Map<String, Integer> col, String field) {
