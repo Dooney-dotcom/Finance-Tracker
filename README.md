@@ -35,13 +35,15 @@ Besides recording **what** was spent, every record can capture **why**: whether 
 
 The application is multi-tenant and invite-only. Every user sees only their own data, and that isolation is enforced by the database itself rather than by application code alone.
 
-<!--
 ## Screenshots
 
-| Dashboard | Records | Wealth |
+*All figures shown are fictional demo data.*
+
+![Dashboard: monthly balance, spending pace, money-flow Sankey and category breakdown](docs/screenshots/dashboard.png)
+
+| Records | Calendar | Wealth |
 |---|---|---|
-| ![Dashboard](docs/screenshots/dashboard.png) | ![Records](docs/screenshots/records.png) | ![Wealth](docs/screenshots/wealth.png) |
--->
+| ![Records table with filters and behavioural tags](docs/screenshots/records.png) | ![Monthly calendar heatmap of spending](docs/screenshots/calendar.png) | ![Net worth overview with allocation and monthly changes](docs/screenshots/wealth.png) |
 
 ---
 
