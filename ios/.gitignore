@@ -1,0 +1,4 @@
+# Local config and Xcode state
+Config.xcconfig
+xcuserdata/
+build/
